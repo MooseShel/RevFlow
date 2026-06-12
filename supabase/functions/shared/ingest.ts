@@ -3,7 +3,7 @@
 // PDF archiving, and notification dispatch (Resend email + Twilio SMS).
 // Used by both upload-batch (portal uploads) and batch-billing (CSV/cron).
 
-import { createClient, SupabaseClient } from "npm:@supabase/supabase-js";
+import { SupabaseClient } from "npm:@supabase/supabase-js";
 import { queryAdmin } from "./db.ts";
 import { sendSMSNotification, sendEmailNotification } from "./notifications.ts";
 import { logger } from "./logger.ts";
@@ -21,6 +21,14 @@ async function hashKey(value: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Extract last 4 digits of a phone number for verification hashing
+ */
+function phoneLast4(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.slice(-4);
+}
+
 export interface StatementRecord {
   patientId?: string;
   patientName: string;
@@ -32,6 +40,7 @@ export interface StatementRecord {
   facilityName: string;
   statementDate: string;
   pdfFilename: string;
+  batchId?: string;
 }
 
 export interface IngestResult {
@@ -44,17 +53,14 @@ export interface IngestResult {
 
 /**
  * Processes a single patient billing statement through the full pipeline:
- * 1. Insert billing_statements row
- * 2. Hash ZIP + SSN last 4
- * 3. Insert verification_tokens
+ * 1. Insert billing_statements row (with patient_name and batch_id)
+ * 2. Hash SSN last 4 and phone last 4 for verification
+ * 3. Insert verification_tokens (with hashed_phone)
  * 4. Log GENERATED audit event
  * 5. Move PDF to archive/ in storage bucket
  * 6. Dispatch Resend email notification
  * 7. Dispatch Twilio SMS notification
- *
- * @param record - Patient statement data
- * @param supabase - Supabase client for storage operations
- * @returns IngestResult with success status and notification details
+ * 8. Update notification tracking on verification_tokens
  */
 export async function processStatementRecord(
   record: StatementRecord,
@@ -63,34 +69,43 @@ export async function processStatementRecord(
   const patientId = record.patientId || `PAT-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
   try {
-    // 1. Insert billing statement
-    const statementRes = await queryAdmin(
-      `INSERT INTO billing_statements (patient_id, total_due, statement_pdf_url, metadata)
-       VALUES ($1, $2, $3, $4)
-       RETURNING statement_id`,
-      [
-        patientId,
-        record.totalDue,
-        record.pdfFilename,
-        JSON.stringify({
-          patientName: record.patientName,
-          facilityName: record.facilityName,
-          statementDate: record.statementDate || new Date().toISOString().slice(0, 10),
-        }),
-      ]
-    );
+    // 1. Insert billing statement with patient_name
+    const insertParams: any[] = [
+      patientId,
+      record.patientName || "",
+      record.totalDue,
+      record.pdfFilename,
+      JSON.stringify({
+        facilityName: record.facilityName,
+        statementDate: record.statementDate || new Date().toISOString().slice(0, 10),
+      }),
+    ];
+
+    let insertQuery = `INSERT INTO billing_statements (patient_id, patient_name, total_due, statement_pdf_url, metadata`;
+    let insertValues = `VALUES ($1, $2, $3, $4, $5`;
+
+    if (record.batchId) {
+      insertQuery += `, batch_id`;
+      insertValues += `, $6`;
+      insertParams.push(record.batchId);
+    }
+
+    insertQuery += `) ${insertValues}) RETURNING statement_id`;
+
+    const statementRes = await queryAdmin(insertQuery, insertParams);
     const statementId = statementRes.rows[0].statement_id;
 
-    // 2. Hash verification keys
-    const hashedZip = await hashKey(record.zipCode);
-    const hashedSsnLast4 = await hashKey(record.ssnLast4);
+    // 2. Hash verification keys: SSN last 4 + phone last 4
+    const hashedSsnLast4 = record.ssnLast4 ? await hashKey(record.ssnLast4) : "";
+    const hashedPhone = record.phone ? await hashKey(phoneLast4(record.phone)) : "";
+    const hashedZip = record.zipCode ? await hashKey(record.zipCode) : "";
 
-    // 3. Create verification token
+    // 3. Create verification token with hashed_phone
     const tokenRes = await queryAdmin(
-      `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_ssn_last4)
-       VALUES ($1, $2, $3)
+      `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_ssn_last4, hashed_phone)
+       VALUES ($1, $2, $3, $4)
        RETURNING token_id`,
-      [statementId, hashedZip, hashedSsnLast4]
+      [statementId, hashedZip, hashedSsnLast4, hashedPhone]
     );
     const tokenId = tokenRes.rows[0].token_id;
 
@@ -138,6 +153,16 @@ export async function processStatementRecord(
         tokenId,
       });
     }
+
+    // 7. Update notification tracking on verification_tokens
+    await queryAdmin(
+      `UPDATE verification_tokens 
+       SET email_sent = $1, sms_sent = $2,
+           email_sent_at = CASE WHEN $1 THEN now() ELSE NULL END,
+           sms_sent_at = CASE WHEN $2 THEN now() ELSE NULL END
+       WHERE token_id = $3`,
+      [emailSent, smsSent, tokenId]
+    );
 
     logger.info("Successfully processed statement record", { patientId, tokenId });
 

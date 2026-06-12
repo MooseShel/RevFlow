@@ -203,9 +203,22 @@ Deno.serve(async (req: Request) => {
 
       logger.info(`Processing confirmation batch of ${records.length} records`);
 
+      // Create batch_uploads record for reporting
+      const { queryAdmin: qa } = await import("../shared/db.ts");
+      const batchRes = await qa(
+        `INSERT INTO batch_uploads (file_count, extracted_count, status)
+         VALUES ($1, $2, 'processing')
+         RETURNING batch_id`,
+        [records.length, records.length]
+      );
+      const batchId = batchRes.rows[0].batch_id;
+      logger.info("Created batch record", { batchId });
+
       const results: Array<{ patientName: string; success: boolean; tokenId?: string; emailSent: boolean; smsSent: boolean; error?: string }> = [];
 
       for (const record of records) {
+        // Attach batchId to each record
+        record.batchId = batchId;
         const result = await processStatementRecord(record, supabase);
         results.push({
           patientName: record.patientName,
@@ -219,12 +232,23 @@ Deno.serve(async (req: Request) => {
 
       const successCount = results.filter((r) => r.success).length;
       const failCount = results.filter((r) => !r.success).length;
+      const emailsSent = results.filter((r) => r.emailSent).length;
+      const smsSent = results.filter((r) => r.smsSent).length;
 
-      logger.info("Confirmation batch completed", { total: records.length, succeeded: successCount, failed: failCount });
+      // Update batch record with final stats
+      await qa(
+        `UPDATE batch_uploads 
+         SET confirmed_count = $1, emails_sent = $2, sms_sent = $3, status = 'completed'
+         WHERE batch_id = $4`,
+        [successCount, emailsSent, smsSent, batchId]
+      );
+
+      logger.info("Confirmation batch completed", { batchId, total: records.length, succeeded: successCount, failed: failCount });
 
       return new Response(
         JSON.stringify({
           success: true,
+          batchId,
           totalProcessed: records.length,
           succeeded: successCount,
           failed: failCount,
