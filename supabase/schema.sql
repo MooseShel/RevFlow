@@ -144,9 +144,6 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Enable Row-Level Security on storage objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
 -- Storage Policies for 'billing-uploads' bucket
 -- Allow service_role (backend edge functions) full access
 CREATE POLICY "service_role_billing_uploads_access" ON storage.objects
