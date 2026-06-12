@@ -185,9 +185,9 @@
     .status-extracting { background: rgba(139,92,246,0.15); color: var(--primary-purple); }
     .status-ready { background: rgba(16,185,129,0.15); color: var(--success-color); }
     .status-failed { background: rgba(244,63,94,0.15); color: var(--error-color); }
-    .file-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 4px; border-radius: 6px; transition: all 0.2s; }
+    .file-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s; flex-shrink: 0; z-index: 10; position: relative; }
     .file-remove:hover { color: var(--error-color); background: rgba(244,63,94,0.1); }
-    .file-remove svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .file-remove svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; pointer-events: none; }
 
     /* Review Cards */
     .review-cards { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
