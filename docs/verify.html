@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Billing Access | Patient Portal</title>
+  <!-- Google Fonts Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary-cyan: #06b6d4;
+      --primary-purple: #8b5cf6;
+      --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+      --error-color: #f43f5e;
+      --success-color: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Modern Background Blob Lights */
+    .bg-blobs {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+    }
+
+    .blob-1 {
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: var(--primary-cyan);
+    }
+
+    .blob-2 {
+      bottom: -10%;
+      right: -10%;
+      width: 45vw;
+      height: 45vw;
+      background: var(--primary-purple);
+    }
+
+    /* Glassmorphic Portal Container */
+    .portal-container {
+      width: 100%;
+      max-width: 460px;
+      padding: 24px;
+      z-index: 10;
+      position: relative;
+    }
+
+    .portal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px 32px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+    }
+
+    /* Shake Animation for Failures */
+    .shake {
+      animation: shakeEffect 0.5s ease;
+    }
+
+    @keyframes shakeEffect {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+
+    .header-logo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-gradient);
+      border-radius: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 8px 16px rgba(6, 182, 212, 0.25);
+    }
+
+    .logo-icon svg {
+      width: 26px;
+      height: 26px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2.5;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    h1 span {
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: center;
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    label {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px 16px;
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    input[type="text"]::placeholder {
+      color: #475569;
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Toast Alert */
+    .alert-box {
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--error-color);
+      font-size: 13.5px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Verification Results Panel (Initially Hidden) */
+    .success-panel {
+      display: none;
+      animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      text-align: center;
+    }
+
+    @keyframes scaleUp {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .success-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px solid rgba(16, 185, 129, 0.25);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 24px auto;
+    }
+
+    .success-icon-wrapper svg {
+      width: 38px;
+      height: 38px;
+      stroke: var(--success-color);
+      stroke-width: 3;
+      fill: none;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      animation: drawCheck 0.6s ease forwards 0.2s;
+    }
+
+    @keyframes drawCheck {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .amount-display {
+      margin: 20px 0;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .amount-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--primary-cyan);
+      margin-top: 4px;
+    }
+
+    .statement-details {
+      text-align: left;
+      margin-bottom: 24px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      font-weight: 500;
+    }
+
+    .detail-value {
+      color: var(--text-main);
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #64748b;
+      font-size: 11px;
+      margin-top: 32px;
+      z-index: 10;
+      position: relative;
+    }
+    
+    .footer-note a {
+      color: var(--primary-cyan);
+      text-decoration: none;
+    }
+
+    /* Missing Token Error State */
+    .error-gate-panel {
+      display: none;
+      text-align: center;
+    }
+
+    .error-gate-panel svg {
+      width: 64px;
+      height: 64px;
+      stroke: var(--error-color);
+      stroke-width: 2;
+      fill: none;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Decorative blobs -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <div class="portal-container">
+    <div class="portal-card" id="mainCard">
+      
+      <!-- Logo block -->
+      <div class="header-logo" id="headerLogo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Alert Message -->
+      <div class="alert-box" id="errorAlert">
+        <svg style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="errorMessage">Verification failed.</span>
+      </div>
+
+      <!-- State 1: Verification Input form -->
+      <div id="verificationGate">
+        <h1>Secure <span>Patient Gate</span></h1>
+        <p class="subtitle">Enter the last 4 digits of your phone number or SSN to securely retrieve your billing details.</p>
+
+        <form id="verifyForm">
+          <div class="form-group">
+            <label for="verificationKey">Identity verification key</label>
+            <div class="input-wrapper">
+              <input type="text" id="verificationKey" placeholder="Last 4 digits of phone or SSN" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" autocomplete="off" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn" id="submitBtn">
+            <span class="spinner" id="btnSpinner"></span>
+            <span id="btnText">Verify & View Statement</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- State 2: Success Statement Panel -->
+      <div class="success-panel" id="successPanel">
+        <div class="success-icon-wrapper">
+          <svg viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        
+        <h1 style="margin-bottom:4px;">Identity Verified</h1>
+        <p class="subtitle" style="margin-bottom: 16px;">Your secure billing statement details are loaded below.</p>
+
+        <div class="amount-display">
+          <label style="margin-bottom:2px;">Total Balance Due</label>
+          <div class="amount-val" id="statementAmount">$0.00</div>
+        </div>
+
+        <div class="statement-details">
+          <div class="detail-row">
+            <span class="detail-label">Facility</span>
+            <span class="detail-value" id="statementFacility">N/A</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Statement Date</span>
+            <span class="detail-value" id="statementDate">N/A</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Statement ID</span>
+            <span class="detail-value" id="statementId" style="font-size: 11px;">N/A</span>
+          </div>
+        </div>
+
+        <a id="downloadBtn" href="#" target="_blank" class="btn" style="background: var(--primary-purple); text-decoration: none;">
+          <svg style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download PDF Statement
+        </a>
+      </div>
+
+      <!-- State 3: Missing Token / Bad Gate Error -->
+      <div class="error-gate-panel" id="errorGatePanel">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <h1 style="color: var(--error-color); margin-bottom: 12px;">Access Restricted</h1>
+        <p class="subtitle" style="margin-bottom: 0;">This billing access URL is invalid or has expired. Please verify the link provided in your SMS or email notification.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer-note">
+    HIPAA-Compliant Connection | Powered by <a href="#">RevFlow</a>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+
+      const verifyForm = document.getElementById("verifyForm");
+      const verificationGate = document.getElementById("verificationGate");
+      const successPanel = document.getElementById("successPanel");
+      const errorGatePanel = document.getElementById("errorGatePanel");
+      const mainCard = document.getElementById("mainCard");
+      
+      const errorAlert = document.getElementById("errorAlert");
+      const errorMessage = document.getElementById("errorMessage");
+      
+      const submitBtn = document.getElementById("submitBtn");
+      const btnSpinner = document.getElementById("btnSpinner");
+      const btnText = document.getElementById("btnText");
+      
+      const statementAmount = document.getElementById("statementAmount");
+      const statementFacility = document.getElementById("statementFacility");
+      const statementDate = document.getElementById("statementDate");
+      const statementId = document.getElementById("statementId");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      // API URL pointing directly to Supabase Edge Function
+      const VERIFY_API_URL = "https://cgrvrprtgughfhqporkl.supabase.co/functions/v1/verify";
+
+      // Enforce URL Token Presence Check
+      if (!token) {
+        verificationGate.style.display = "none";
+        errorGatePanel.style.display = "block";
+        return;
+      }
+
+      // Handle Form Submission
+      verifyForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const verificationKey = document.getElementById("verificationKey").value.trim();
+        if (!verificationKey) return;
+
+        // Visual loading state
+        btnSpinner.style.display = "block";
+        btnText.textContent = "Verifying...";
+        submitBtn.disabled = true;
+        errorAlert.style.display = "none";
+
+        try {
+          const response = await fetch(VERIFY_API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ token, verificationKey })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            const stmt = data.statement;
+            
+            // Format total due
+            const formattedAmount = new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD'
+            }).format(stmt.total_due);
+
+            // Populate Statement details
+            statementAmount.textContent = formattedAmount;
+            statementFacility.textContent = stmt.metadata?.facilityName || "Medical Provider";
+            statementDate.textContent = stmt.metadata?.statementDate || "N/A";
+            statementId.textContent = stmt.statement_id.substring(0, 18) + "...";
+            downloadBtn.href = stmt.statement_pdf_url; // Secure temporary signed URL!
+
+            // Transition Panels smoothly
+            verificationGate.style.display = "none";
+            successPanel.style.display = "block";
+            
+          } else {
+            // Display error and shake card
+            errorMessage.textContent = data.error || "Verification failed.";
+            errorAlert.style.display = "flex";
+            
+            mainCard.classList.add("shake");
+            setTimeout(() => mainCard.classList.remove("shake"), 500);
+
+            // Reset loading state
+            btnSpinner.style.display = "none";
+            btnText.textContent = "Verify & View Statement";
+            submitBtn.disabled = false;
+          }
+
+        } catch (error) {
+          errorMessage.textContent = "Unable to connect to the verification gateway. Please try again.";
+          errorAlert.style.display = "flex";
+          
+          btnSpinner.style.display = "none";
+          btnText.textContent = "Verify & View Statement";
+          submitBtn.disabled = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -112,6 +112,10 @@ export async function extractPatientData(
     throw new Error("GEMINI_API_KEY is not configured. Cannot extract PDF data.");
   }
 
+  if (!GEMINI_API_KEY.startsWith("AIza")) {
+    logger.warn("GEMINI_API_KEY does not start with 'AIza' — it may be invalid", { keyPrefix: GEMINI_API_KEY.substring(0, 6) });
+  }
+
   logger.info("Starting Gemini AI extraction for PDF", { filename });
 
   // Convert PDF bytes to base64
@@ -139,8 +143,22 @@ export async function extractPatientData(
     ],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: "application/json",
+      responseSchema: {
+        type: "object",
+        properties: {
+          patientName: { type: "string" },
+          email: { type: "string" },
+          phone: { type: "string" },
+          zipCode: { type: "string" },
+          ssnLast4: { type: "string" },
+          totalDue: { type: "number" },
+          facilityName: { type: "string" },
+          statementDate: { type: "string" },
+        },
+        required: ["patientName", "totalDue", "facilityName"],
+      },
     },
   };
 
@@ -170,17 +188,60 @@ export async function extractPatientData(
 
       const data = await response.json();
 
-      // Extract text content from Gemini response
-      const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      // Log the response shape for debugging
+      const candidate = data?.candidates?.[0];
+      const finishReason = candidate?.finishReason;
+      const parts = candidate?.content?.parts;
+      logger.info("Gemini response shape", {
+        filename,
+        finishReason,
+        partsCount: parts?.length ?? 0,
+        hasBlockReason: !!data?.promptFeedback?.blockReason,
+      });
+
+      // Check for blocked prompts
+      if (data?.promptFeedback?.blockReason) {
+        throw new Error(`Gemini blocked the prompt: ${data.promptFeedback.blockReason}`);
+      }
+
+      if (!parts || parts.length === 0) {
+        logger.error("Gemini returned no parts", { filename, rawResponse: JSON.stringify(data).substring(0, 500) });
+        throw new Error("Gemini returned empty or malformed response — no content parts found");
+      }
+
+      // Gemini 2.5 thinking models return multiple parts:
+      //   parts[0] = { thought: true, text: "<thinking>..." }
+      //   parts[1] = { text: "{...json...}" }
+      // Non-thinking models return a single part with the JSON text.
+      // Find the last non-thought part with text content.
+      let textContent: string | null = null;
+      for (let i = parts.length - 1; i >= 0; i--) {
+        if (parts[i].text && !parts[i].thought) {
+          textContent = parts[i].text;
+          break;
+        }
+      }
+
+      // Fallback: if all parts are thought parts, take the last one with text
       if (!textContent) {
-        throw new Error("Gemini returned empty or malformed response — no text content found");
+        for (let i = parts.length - 1; i >= 0; i--) {
+          if (parts[i].text) {
+            textContent = parts[i].text;
+            break;
+          }
+        }
+      }
+
+      if (!textContent) {
+        logger.error("No text content found in any Gemini response part", { filename, parts: JSON.stringify(parts).substring(0, 500) });
+        throw new Error("Gemini returned no text content in any response part");
       }
 
       // Parse JSON from response — robust extraction handles markdown fences,
       // thinking blocks, and other non-JSON wrapping Gemini may add
       const extracted = extractJsonFromText(textContent);
       if (!extracted) {
-        logger.error("Could not extract valid JSON from Gemini response", { filename, rawLength: textContent.length, preview: textContent.substring(0, 300) });
+        logger.error("Could not extract valid JSON from Gemini response", { filename, rawLength: textContent.length, preview: textContent.substring(0, 500) });
         throw new Error("Gemini response did not contain valid JSON");
       }
 

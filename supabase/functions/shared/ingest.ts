@@ -133,7 +133,7 @@ export async function processStatementRecord(
     }
 
     // 6. Dispatch notifications
-    const verificationUrl = `${APP_URL}/?token=${tokenId}`;
+    const verificationUrl = `${APP_URL}/verify.html?token=${tokenId}`;
 
     let smsSent = false;
     let emailSent = false;
