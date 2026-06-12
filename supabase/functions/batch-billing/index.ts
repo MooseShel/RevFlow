@@ -4,26 +4,13 @@
 
 import { createClient } from "npm:@supabase/supabase-js";
 import { queryAdmin } from "../shared/db.ts";
-import { sendSMSNotification, sendEmailNotification } from "../shared/notifications.ts";
+import { processStatementRecord, StatementRecord } from "../shared/ingest.ts";
 import { logger } from "../shared/logger.ts";
-
-const APP_URL = Deno.env.get("APP_URL") || "https://mooseshel.github.io/RevFlow";
 
 // Initialize Supabase Client for storage operations
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-/**
- * SHA-256 helper for hashing keys in Deno
- */
-async function hashKey(value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const rawData = encoder.encode(value.trim());
-  const hashBuffer = await crypto.subtle.digest("SHA-256", rawData);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 /**
  * Parses simple CSV content safely
@@ -98,7 +85,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // Header structure: patient_id, name, email, phone, zip, ssn_last4, total_due, pdf_filename
-    const header = csvRows[0];
     const dataRows = csvRows.slice(1);
 
     logger.info(`Processing ${dataRows.length} billing rows from CSV...`);
@@ -110,87 +96,34 @@ Deno.serve(async (req: Request) => {
       const [patientId, patientName, email, phone, zipCode, ssnLast4, totalDueStr, pdfFilename] = row;
       const totalDue = parseFloat(totalDueStr);
 
-      try {
-        // 4. Verify corresponding PDF statement file exists in storage root
-        const pdfExists = files?.some((f) => f.name === pdfFilename);
-        if (!pdfExists) {
-          logger.error(`Skipped ingestion: corresponding statement PDF was not found in storage`, { pdfFilename, patientId });
-          continue;
-        }
+      // Verify corresponding PDF statement file exists in storage root
+      const pdfExists = files?.some((f) => f.name === pdfFilename);
+      if (!pdfExists) {
+        logger.error(`Skipped ingestion: corresponding statement PDF was not found in storage`, { pdfFilename, patientId });
+        continue;
+      }
 
-        // 5. Ingest statement details (admin database query)
-        const statementRes = await queryAdmin(
-          `INSERT INTO billing_statements (patient_id, total_due, statement_pdf_url, metadata)
-           VALUES ($1, $2, $3, $4)
-           RETURNING statement_id`,
-          [
-            patientId,
-            totalDue,
-            pdfFilename, // Storing filename relative to storage bucket
-            JSON.stringify({ patientName, facilityName: "GoRev Medical Facility", statementDate: new Date().toISOString().slice(0, 10) }),
-          ]
-        );
-        const statementId = statementRes.rows[0].statement_id;
+      // Use shared ingestion pipeline
+      const record: StatementRecord = {
+        patientId,
+        patientName,
+        email,
+        phone,
+        zipCode,
+        ssnLast4,
+        totalDue,
+        facilityName: "GoRev Medical Facility",
+        statementDate: new Date().toISOString().slice(0, 10),
+        pdfFilename,
+      };
 
-        // 6. Generate SHA-256 verification hashes
-        const hashedZip = await hashKey(zipCode);
-        const hashedSsnLast4 = await hashKey(ssnLast4);
-
-        // 7. Create verification token (admin database query)
-        const tokenRes = await queryAdmin(
-          `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_ssn_last4)
-           VALUES ($1, $2, $3)
-           RETURNING token_id`,
-          [statementId, hashedZip, hashedSsnLast4]
-        );
-        const tokenId = tokenRes.rows[0].token_id;
-
-        // 8. Log the audit event 'GENERATED'
-        await queryAdmin(
-          `INSERT INTO access_audit_logs (token_id, event_type, ip_address, user_agent)
-           VALUES ($1, 'GENERATED', '127.0.0.1', 'Serverless Storage Ingestion')`,
-          [tokenId]
-        );
-
-        // 9. Move PDF statement to archive subfolder inside storage bucket
-        const { error: moveError } = await supabase.storage
-          .from("billing-uploads")
-          .move(pdfFilename, `archive/${pdfFilename}`);
-
-        if (moveError) {
-          logger.error("Failed to archive PDF statement file in storage", { pdfFilename, error: moveError.message });
-          throw moveError;
-        }
-
-        // 10. Dispatch notifications
-        const verificationUrl = `${APP_URL}/?token=${tokenId}`;
-        const smsSuccess = await sendSMSNotification({
-          toPhone: phone,
-          verificationUrl,
-          tokenId,
-        });
-
-        const emailSuccess = await sendEmailNotification({
-          toEmail: email,
-          verificationUrl,
-          tokenId,
-        });
-
-        if (smsSuccess || emailSuccess) {
-          succeededCount++;
-        }
-
-        logger.info("Successfully processed batch row statement and notification", {
-          patientId,
-          tokenId,
-        });
-
-      } catch (rowErr: any) {
-        logger.error("Error processing statement row in batch loop", { patientId, error: rowErr.message });
+      const result = await processStatementRecord(record, supabase);
+      if (result.success) {
+        succeededCount++;
       }
     }
 
-    // 11. Archive the CSV file to prevent reprocessing on next run
+    // Archive the CSV file to prevent reprocessing on next run
     const archivedCsvName = `archive/index_${Date.now()}.csv`;
     const { error: moveCsvError } = await supabase.storage
       .from("billing-uploads")

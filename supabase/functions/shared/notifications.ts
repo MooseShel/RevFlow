@@ -1,5 +1,5 @@
 // Deno Notifications Dispatcher Service
-// Sends SMS (Twilio) and Emails (SendGrid) using Deno's lightweight native fetch client.
+// Sends SMS (Twilio) and Emails (Resend) using Deno's lightweight native fetch client.
 // Guarantees zero PHI (no patient names or dollar amounts) inside alerts.
 
 import { logger } from "./logger.ts";
@@ -8,8 +8,8 @@ const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
 const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
 const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
-const sendgridFrom = Deno.env.get("SENDGRID_FROM_EMAIL");
+const resendKey = Deno.env.get("RESEND_API_KEY");
+const resendFrom = Deno.env.get("RESEND_FROM_EMAIL");
 
 export interface SMSPayload {
   toPhone: string;
@@ -75,11 +75,11 @@ export async function sendSMSNotification(payload: SMSPayload): Promise<boolean>
 }
 
 /**
- * Sends a secure Email alert via SendGrid REST API.
+ * Sends a secure Email alert via Resend REST API.
  */
 export async function sendEmailNotification(payload: EmailPayload): Promise<boolean> {
   const { toEmail, verificationUrl, tokenId } = payload;
-  const fromEmail = sendgridFrom || "billing-alerts@example.com";
+  const fromEmail = resendFrom || "onboarding@resend.dev";
 
   const textBody = `Dear Patient,\n\nWe have generated a new billing statement for your recent medical visit.\n\nTo securely view your statement details, please verify your identity by visiting the link below:\n\n${verificationUrl}\n\nFor your privacy, this verification link will expire in 72 hours and contains no Personal Health Information (PHI).\n\nIf you did not expect this statement, please ignore this email.\n\nThank you,\nBilling Services Team`;
 
@@ -104,39 +104,37 @@ export async function sendEmailNotification(payload: EmailPayload): Promise<bool
 
   logger.info("Preparing secure Email notification dispatch", { tokenId });
 
-  if (sendgridKey) {
+  if (resendKey) {
     try {
-      const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${sendgridKey}`,
+          "Authorization": `Bearer ${resendKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          personalizations: [{ to: [{ email: toEmail }] }],
-          from: { email: fromEmail },
+          from: fromEmail,
+          to: [toEmail],
           subject: "New Secure Billing Statement Available",
-          content: [
-            { type: "text/plain", value: textBody },
-            { type: "text/html", value: htmlBody },
-          ],
+          text: textBody,
+          html: htmlBody,
         }),
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`SendGrid HTTP ${response.status}: ${errText}`);
+        throw new Error(`Resend HTTP ${response.status}: ${errText}`);
       }
 
-      logger.info("Successfully sent Email via SendGrid API", { tokenId });
+      logger.info("Successfully sent Email via Resend API", { tokenId });
       return true;
     } catch (error: any) {
-      logger.error("Failed to send Email via SendGrid API", { tokenId, error: error.message });
+      logger.error("Failed to send Email via Resend API", { tokenId, error: error.message });
       return false;
     }
   } else {
     // Simulator Mode
-    logger.warn("SendGrid credentials not configured in Deno. Simulating Email transmission.", {
+    logger.warn("Resend credentials not configured in Deno. Simulating Email transmission.", {
       tokenId,
       recipient: toEmail,
     });

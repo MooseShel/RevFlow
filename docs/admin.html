@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RevFlow Admin | Billing Upload Portal</title>
+  <meta name="description" content="Secure admin portal for uploading patient billing statements and dispatching HIPAA-compliant notifications.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-surface: #1e293b;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary-cyan: #06b6d4;
+      --primary-purple: #8b5cf6;
+      --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+      --error-color: #f43f5e;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Background Effects */
+    .bg-blobs {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; overflow: hidden; pointer-events: none;
+    }
+    .blob { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.12; }
+    .blob-1 { top: -15%; left: -10%; width: 55vw; height: 55vw; background: var(--primary-cyan); }
+    .blob-2 { bottom: -15%; right: -10%; width: 50vw; height: 50vw; background: var(--primary-purple); }
+    .blob-3 { top: 40%; left: 50%; width: 30vw; height: 30vw; background: #3b82f6; transform: translateX(-50%); }
+
+    /* Layout */
+    .app-container {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 0 auto; padding: 32px 24px;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 36px;
+    }
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: var(--primary-gradient);
+      border-radius: 14px;
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 8px 16px rgba(6, 182, 212, 0.25);
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2.5; }
+    .header-text h1 {
+      font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
+    }
+    .header-text h1 span {
+      background: var(--primary-gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-text p { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+    .header-badge {
+      margin-left: auto; padding: 6px 14px;
+      border-radius: 20px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-locked { background: rgba(244,63,94,0.15); color: var(--error-color); border: 1px solid rgba(244,63,94,0.2); }
+    .badge-unlocked { background: rgba(16,185,129,0.15); color: var(--success-color); border: 1px solid rgba(16,185,129,0.2); }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: 32px;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 16px 32px rgba(0,0,0,0.25);
+      margin-bottom: 24px;
+      transition: all 0.4s ease;
+    }
+    .card-title {
+      font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600;
+      margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .card-title svg { width: 22px; height: 22px; stroke: var(--primary-cyan); fill: none; stroke-width: 2; }
+
+    /* Login Gate */
+    .login-card { max-width: 460px; margin: 120px auto 0; }
+    .login-card h2 {
+      font-family: 'Outfit', sans-serif; font-size: 22px; text-align: center; margin-bottom: 8px;
+    }
+    .login-card .subtitle { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 28px; }
+    
+    /* Form Elements */
+    input[type="text"], input[type="password"], input[type="email"], input[type="tel"], input[type="number"] {
+      width: 100%; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 14px 16px; color: var(--text-main);
+      font-family: 'Inter', sans-serif; font-size: 15px;
+      transition: all 0.3s ease; outline: none;
+    }
+    input:focus {
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 0 4px rgba(6,182,212,0.15);
+      background: rgba(15,23,42,0.8);
+    }
+    input::placeholder { color: #475569; }
+
+    label {
+      display: block; color: var(--text-muted); font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;
+    }
+
+    .btn {
+      display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+      border: none; border-radius: 12px; padding: 14px 24px;
+      font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease;
+    }
+    .btn-primary {
+      background: var(--primary-gradient); color: #fff;
+      box-shadow: 0 4px 12px rgba(139,92,246,0.2); width: 100%;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139,92,246,0.35); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.2); width: 100%;
+    }
+    .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.35); }
+    .btn-success:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+    /* Alert */
+    .alert {
+      padding: 12px 16px; border-radius: 12px; font-size: 13px;
+      display: none; align-items: center; gap: 8px; margin-bottom: 20px;
+    }
+    .alert-error { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2); color: var(--error-color); }
+    .alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--success-color); }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed rgba(255,255,255,0.12); border-radius: 16px;
+      padding: 48px 24px; text-align: center;
+      transition: all 0.3s ease; cursor: pointer; position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--primary-cyan); background: rgba(6,182,212,0.05);
+    }
+    .upload-zone.drag-over { transform: scale(1.01); }
+    .upload-zone svg { width: 48px; height: 48px; stroke: var(--text-dim); fill: none; stroke-width: 1.5; margin-bottom: 16px; }
+    .upload-zone h3 { font-family: 'Outfit', sans-serif; font-size: 16px; margin-bottom: 8px; }
+    .upload-zone p { color: var(--text-muted); font-size: 13px; }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    /* File List */
+    .file-list { margin-top: 20px; }
+    .file-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 12px;
+      background: rgba(15,23,42,0.4); border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 8px; font-size: 13px;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .file-icon { width: 36px; height: 36px; background: rgba(239,68,68,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .file-icon svg { width: 18px; height: 18px; stroke: #ef4444; fill: none; stroke-width: 2; }
+    .file-name { flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-size { color: var(--text-dim); font-size: 11px; flex-shrink: 0; }
+    .file-status { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; flex-shrink: 0; }
+    .status-pending { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+    .status-uploading { background: rgba(6,182,212,0.15); color: var(--primary-cyan); }
+    .status-extracting { background: rgba(139,92,246,0.15); color: var(--primary-purple); }
+    .status-ready { background: rgba(16,185,129,0.15); color: var(--success-color); }
+    .status-failed { background: rgba(244,63,94,0.15); color: var(--error-color); }
+    .file-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 4px; border-radius: 6px; transition: all 0.2s; }
+    .file-remove:hover { color: var(--error-color); background: rgba(244,63,94,0.1); }
+    .file-remove svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* Review Table */
+    .table-wrapper { overflow-x: auto; margin-top: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 800px; }
+    thead th {
+      background: rgba(15,23,42,0.6); padding: 12px 14px;
+      text-align: left; font-weight: 600; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      position: sticky; top: 0;
+    }
+    tbody td {
+      padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+    tbody tr:hover { background: rgba(6,182,212,0.03); }
+    tbody tr:last-child td { border-bottom: none; }
+    td input {
+      width: 100%; background: transparent; border: 1px solid transparent;
+      border-radius: 6px; padding: 6px 8px; color: var(--text-main);
+      font-family: 'Inter', sans-serif; font-size: 13px; transition: all 0.2s;
+    }
+    td input:hover { border-color: rgba(255,255,255,0.1); }
+    td input:focus {
+      border-color: var(--primary-cyan); background: rgba(15,23,42,0.4);
+      box-shadow: 0 0 0 2px rgba(6,182,212,0.1); outline: none;
+    }
+    td .row-delete {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      padding: 4px; border-radius: 6px; transition: all 0.2s;
+    }
+    td .row-delete:hover { color: var(--error-color); background: rgba(244,63,94,0.1); }
+    td .row-delete svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* Summary Stats */
+    .stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .stat-card {
+      flex: 1; min-width: 140px; background: rgba(15,23,42,0.4);
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 14px;
+      padding: 18px 20px; text-align: center;
+    }
+    .stat-value {
+      font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 700;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    /* Dispatch Results */
+    .result-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 10px;
+      background: rgba(15,23,42,0.3); margin-bottom: 6px; font-size: 13px;
+    }
+    .result-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .result-icon.ok { background: rgba(16,185,129,0.15); }
+    .result-icon.fail { background: rgba(244,63,94,0.15); }
+    .result-icon svg { width: 14px; height: 14px; fill: none; stroke-width: 2.5; }
+    .result-icon.ok svg { stroke: var(--success-color); }
+    .result-icon.fail svg { stroke: var(--error-color); }
+    .result-name { flex: 1; font-weight: 500; }
+    .result-badges { display: flex; gap: 6px; }
+    .result-badge { font-size: 10px; padding: 3px 8px; border-radius: 5px; font-weight: 600; }
+
+    /* Progress Bar */
+    .progress-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin: 16px 0; }
+    .progress-fill { height: 100%; background: var(--primary-gradient); border-radius: 4px; transition: width 0.4s ease; width: 0%; }
+
+    /* Spinner */
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Section Visibility */
+    .hidden { display: none !important; }
+
+    /* Footer */
+    .footer { text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 40px; padding-bottom: 24px; }
+    .footer a { color: var(--primary-cyan); text-decoration: none; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .app-container { padding: 16px; }
+      .card { padding: 20px; }
+      .stats-row { flex-direction: column; }
+      .app-header { flex-wrap: wrap; }
+      .header-badge { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="header-text">
+        <h1>RevFlow <span>Admin Portal</span></h1>
+        <p>Secure Billing Upload & Notification Center</p>
+      </div>
+      <span class="header-badge badge-locked" id="authBadge">🔒 Locked</span>
+    </header>
+
+    <!-- ═══ LOGIN GATE ═══ -->
+    <div id="loginSection">
+      <div class="card login-card">
+        <h2>🔐 Admin Access</h2>
+        <p class="subtitle">Enter your admin password to access the billing upload portal.</p>
+        <div class="alert alert-error" id="loginError"><span id="loginErrorMsg">Invalid password.</span></div>
+        <div style="margin-bottom: 20px;">
+          <label for="adminPassword">Admin Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">
+          <span id="loginBtnText">Unlock Portal</span>
+          <div class="spinner hidden" id="loginSpinner"></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ DASHBOARD (hidden until auth) ═══ -->
+    <div id="dashboardSection" class="hidden">
+
+      <!-- Upload Card -->
+      <div class="card" id="uploadCard">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Billing Statements
+        </div>
+        <div class="upload-zone" id="uploadZone">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+          <h3>Drag & Drop PDF Statements</h3>
+          <p>or click to browse • Max 50 files, 10MB each</p>
+          <input type="file" id="fileInput" multiple accept=".pdf,application/pdf">
+        </div>
+        <div class="file-list" id="fileList"></div>
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary hidden" id="uploadBtn" onclick="handleUpload()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="uploadBtnText">Upload & Extract</span>
+            <div class="spinner hidden" id="uploadSpinner"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Review Card (hidden until extraction) -->
+      <div class="card hidden" id="reviewCard">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Review Extracted Data
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+          Review and edit the AI-extracted patient data below. Click any cell to make corrections.
+        </p>
+        <div class="stats-row" id="extractionStats"></div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Patient Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>ZIP</th>
+                <th>SSN Last 4</th>
+                <th>Total Due</th>
+                <th>Facility</th>
+                <th>PDF</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top: 24px;">
+          <button class="btn btn-success" id="confirmBtn" onclick="handleConfirm()">
+            <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span id="confirmBtnText">Confirm & Send Notifications</span>
+            <div class="spinner hidden" id="confirmSpinner"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Card (hidden until dispatch) -->
+      <div class="card hidden" id="resultsCard">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Dispatch Results
+        </div>
+        <div class="stats-row" id="resultStats"></div>
+        <div class="progress-bar"><div class="progress-fill" id="resultProgress"></div></div>
+        <div id="resultsList"></div>
+        <div style="margin-top: 24px;">
+          <button class="btn btn-primary" onclick="resetDashboard()">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Upload Another Batch
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      HIPAA-Compliant System • Zero PHI in Notifications<br>
+      Powered by <a href="#">RevFlow</a>
+    </div>
+  </div>
+
+  <script>
+    // ─── Configuration ───────────────────────────────────────────
+    const EDGE_FUNCTION_BASE = "https://cgrvrprtgughfhqporkl.supabase.co/functions/v1/upload-batch";
+    let adminToken = sessionStorage.getItem("revflow_admin_token") || "";
+    let selectedFiles = [];
+    let extractedRecords = [];
+
+    // Auto-login if session token exists
+    document.addEventListener("DOMContentLoaded", () => {
+      if (adminToken) {
+        verifyStoredToken();
+      }
+      setupDropZone();
+    });
+
+    // ─── Auth ────────────────────────────────────────────────────
+    async function handleLogin() {
+      const password = document.getElementById("adminPassword").value.trim();
+      if (!password) return;
+
+      toggleLoginLoading(true);
+      hideAlert("loginError");
+
+      try {
+        const res = await fetch(`${EDGE_FUNCTION_BASE}/auth`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${password}`, "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        if (res.ok) {
+          adminToken = password;
+          sessionStorage.setItem("revflow_admin_token", password);
+          unlockDashboard();
+        } else {
+          showAlert("loginError", "Invalid admin password. Please try again.");
+        }
+      } catch (err) {
+        showAlert("loginError", "Connection failed. Please check your network.");
+      } finally {
+        toggleLoginLoading(false);
+      }
+    }
+
+    async function verifyStoredToken() {
+      try {
+        const res = await fetch(`${EDGE_FUNCTION_BASE}/auth`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${adminToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (res.ok) {
+          unlockDashboard();
+        } else {
+          sessionStorage.removeItem("revflow_admin_token");
+          adminToken = "";
+        }
+      } catch { /* stay on login */ }
+    }
+
+    function unlockDashboard() {
+      document.getElementById("loginSection").classList.add("hidden");
+      document.getElementById("dashboardSection").classList.remove("hidden");
+      const badge = document.getElementById("authBadge");
+      badge.textContent = "🔓 Unlocked";
+      badge.className = "header-badge badge-unlocked";
+    }
+
+    // ─── File Upload Zone ────────────────────────────────────────
+    function setupDropZone() {
+      const zone = document.getElementById("uploadZone");
+      const input = document.getElementById("fileInput");
+
+      zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+      zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault(); zone.classList.remove("drag-over");
+        addFiles(e.dataTransfer.files);
+      });
+      input.addEventListener("change", (e) => addFiles(e.target.files));
+    }
+
+    function addFiles(fileListObj) {
+      const newFiles = Array.from(fileListObj).filter(f => f.type === "application/pdf");
+      if (selectedFiles.length + newFiles.length > 50) {
+        alert("Maximum 50 files per batch. Please reduce your selection.");
+        return;
+      }
+      for (const f of newFiles) {
+        if (f.size > 10 * 1024 * 1024) {
+          alert(`${f.name} exceeds 10MB limit and was skipped.`);
+          continue;
+        }
+        if (!selectedFiles.find(sf => sf.name === f.name && sf.size === f.size)) {
+          selectedFiles.push(f);
+        }
+      }
+      renderFileList();
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+    }
+
+    function renderFileList() {
+      const container = document.getElementById("fileList");
+      const btn = document.getElementById("uploadBtn");
+
+      if (selectedFiles.length === 0) {
+        container.innerHTML = "";
+        btn.classList.add("hidden");
+        return;
+      }
+
+      btn.classList.remove("hidden");
+      container.innerHTML = selectedFiles.map((f, i) => `
+        <div class="file-item" id="file-${i}">
+          <div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="file-name">${escapeHtml(f.name)}</span>
+          <span class="file-size">${formatSize(f.size)}</span>
+          <span class="file-status status-pending" id="status-${i}">Pending</span>
+          <button class="file-remove" onclick="removeFile(${i})" title="Remove file">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      `).join("");
+    }
+
+    // ─── Upload & Extract ────────────────────────────────────────
+    async function handleUpload() {
+      if (selectedFiles.length === 0) return;
+
+      toggleUploadLoading(true);
+      // Disable remove buttons during upload
+      document.querySelectorAll(".file-remove").forEach(b => b.disabled = true);
+
+      // Update all statuses to uploading
+      selectedFiles.forEach((_, i) => updateFileStatus(i, "uploading", "Uploading..."));
+
+      try {
+        const formData = new FormData();
+        selectedFiles.forEach((f) => formData.append("files", f));
+
+        // Update to extracting
+        selectedFiles.forEach((_, i) => updateFileStatus(i, "extracting", "Extracting..."));
+
+        const res = await fetch(`${EDGE_FUNCTION_BASE}/upload`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${adminToken}` },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Upload failed (HTTP ${res.status})`);
+        }
+
+        const data = await res.json();
+        extractedRecords = [];
+
+        // Process results
+        data.records.forEach((r, i) => {
+          if (r.extracted) {
+            updateFileStatus(i, "ready", "✓ Ready");
+            extractedRecords.push(r.extracted);
+          } else {
+            updateFileStatus(i, "failed", "✗ Failed");
+          }
+        });
+
+        // Show review table
+        if (extractedRecords.length > 0) {
+          showReviewTable(data);
+        } else {
+          alert("No data could be extracted from the uploaded PDFs. Please check the files and try again.");
+        }
+
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+        selectedFiles.forEach((_, i) => updateFileStatus(i, "failed", "✗ Error"));
+      } finally {
+        toggleUploadLoading(false);
+      }
+    }
+
+    function updateFileStatus(index, statusClass, text) {
+      const el = document.getElementById(`status-${index}`);
+      if (el) {
+        el.className = `file-status status-${statusClass}`;
+        el.textContent = text;
+      }
+    }
+
+    // ─── Review Table ────────────────────────────────────────────
+    function showReviewTable(data) {
+      const card = document.getElementById("reviewCard");
+      const statsEl = document.getElementById("extractionStats");
+      const tbody = document.getElementById("reviewTableBody");
+
+      // Stats
+      statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-value">${data.totalFiles}</div><div class="stat-label">Files Uploaded</div></div>
+        <div class="stat-card"><div class="stat-value">${data.extracted}</div><div class="stat-label">Extracted</div></div>
+        <div class="stat-card"><div class="stat-value">${data.failed}</div><div class="stat-label">Failed</div></div>
+      `;
+
+      // Table rows
+      tbody.innerHTML = extractedRecords.map((r, i) => `
+        <tr id="review-row-${i}">
+          <td><input type="text" value="${escapeAttr(r.patientName)}" data-field="patientName" data-index="${i}"></td>
+          <td><input type="email" value="${escapeAttr(r.email)}" data-field="email" data-index="${i}"></td>
+          <td><input type="tel" value="${escapeAttr(r.phone)}" data-field="phone" data-index="${i}"></td>
+          <td><input type="text" value="${escapeAttr(r.zipCode)}" data-field="zipCode" data-index="${i}" maxlength="5" style="width:70px"></td>
+          <td><input type="text" value="${escapeAttr(r.ssnLast4)}" data-field="ssnLast4" data-index="${i}" maxlength="4" style="width:60px"></td>
+          <td><input type="number" value="${r.totalDue}" data-field="totalDue" data-index="${i}" step="0.01" style="width:90px"></td>
+          <td><input type="text" value="${escapeAttr(r.facilityName)}" data-field="facilityName" data-index="${i}"></td>
+          <td style="font-size:11px;color:var(--text-dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeAttr(r.pdfFilename)}">${escapeHtml(r.pdfFilename.split('_').slice(1).join('_') || r.pdfFilename)}</td>
+          <td><button class="row-delete" onclick="deleteReviewRow(${i})" title="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>
+        </tr>
+      `).join("");
+
+      // Listen for edits
+      tbody.querySelectorAll("input").forEach(input => {
+        input.addEventListener("change", (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          const field = e.target.dataset.field;
+          if (field === "totalDue") {
+            extractedRecords[idx][field] = parseFloat(e.target.value) || 0;
+          } else {
+            extractedRecords[idx][field] = e.target.value;
+          }
+        });
+      });
+
+      card.classList.remove("hidden");
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function deleteReviewRow(index) {
+      extractedRecords.splice(index, 1);
+      // Re-render
+      const data = { totalFiles: selectedFiles.length, extracted: extractedRecords.length, failed: selectedFiles.length - extractedRecords.length };
+      showReviewTable(data);
+      if (extractedRecords.length === 0) {
+        document.getElementById("reviewCard").classList.add("hidden");
+      }
+    }
+
+    // ─── Confirm & Dispatch ──────────────────────────────────────
+    async function handleConfirm() {
+      if (extractedRecords.length === 0) return;
+
+      // Validate required fields
+      for (let i = 0; i < extractedRecords.length; i++) {
+        const r = extractedRecords[i];
+        if (!r.zipCode || !r.ssnLast4) {
+          alert(`Row ${i + 1} (${r.patientName || 'Unknown'}): ZIP Code and SSN Last 4 are required for verification token generation.`);
+          return;
+        }
+        if (!r.email && !r.phone) {
+          alert(`Row ${i + 1} (${r.patientName || 'Unknown'}): At least an email or phone number is required for notification.`);
+          return;
+        }
+      }
+
+      if (!confirm(`Send notifications for ${extractedRecords.length} patient statement(s)?\n\nThis will dispatch emails and SMS messages to the listed patients.`)) {
+        return;
+      }
+
+      toggleConfirmLoading(true);
+
+      try {
+        const res = await fetch(`${EDGE_FUNCTION_BASE}/confirm`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${adminToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ records: extractedRecords }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Confirmation failed (HTTP ${res.status})`);
+        }
+
+        const data = await res.json();
+        showResults(data);
+
+      } catch (err) {
+        alert("Dispatch failed: " + err.message);
+      } finally {
+        toggleConfirmLoading(false);
+      }
+    }
+
+    // ─── Results ─────────────────────────────────────────────────
+    function showResults(data) {
+      const card = document.getElementById("resultsCard");
+      const statsEl = document.getElementById("resultStats");
+      const listEl = document.getElementById("resultsList");
+      const progressEl = document.getElementById("resultProgress");
+
+      // Hide other cards
+      document.getElementById("uploadCard").classList.add("hidden");
+      document.getElementById("reviewCard").classList.add("hidden");
+
+      // Stats
+      const emailsSent = data.results.filter(r => r.emailSent).length;
+      const smsSent = data.results.filter(r => r.smsSent).length;
+
+      statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-value">${data.totalProcessed}</div><div class="stat-label">Processed</div></div>
+        <div class="stat-card"><div class="stat-value" style="-webkit-text-fill-color: var(--success-color)">${data.succeeded}</div><div class="stat-label">Succeeded</div></div>
+        <div class="stat-card"><div class="stat-value">${emailsSent}</div><div class="stat-label">Emails Sent</div></div>
+        <div class="stat-card"><div class="stat-value">${smsSent}</div><div class="stat-label">SMS Sent</div></div>
+      `;
+
+      progressEl.style.width = `${(data.succeeded / data.totalProcessed) * 100}%`;
+
+      listEl.innerHTML = data.results.map(r => `
+        <div class="result-item">
+          <div class="result-icon ${r.success ? 'ok' : 'fail'}">
+            ${r.success
+              ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+              : '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'}
+          </div>
+          <span class="result-name">${escapeHtml(r.patientName)}</span>
+          <div class="result-badges">
+            ${r.emailSent ? '<span class="result-badge" style="background:rgba(16,185,129,0.15);color:var(--success-color)">📧 Email</span>' : '<span class="result-badge" style="background:rgba(255,255,255,0.05);color:var(--text-dim)">📧 —</span>'}
+            ${r.smsSent ? '<span class="result-badge" style="background:rgba(16,185,129,0.15);color:var(--success-color)">📱 SMS</span>' : '<span class="result-badge" style="background:rgba(255,255,255,0.05);color:var(--text-dim)">📱 —</span>'}
+          </div>
+        </div>
+      `).join("");
+
+      card.classList.remove("hidden");
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // ─── Reset ───────────────────────────────────────────────────
+    function resetDashboard() {
+      selectedFiles = [];
+      extractedRecords = [];
+      document.getElementById("fileList").innerHTML = "";
+      document.getElementById("uploadBtn").classList.add("hidden");
+      document.getElementById("uploadCard").classList.remove("hidden");
+      document.getElementById("reviewCard").classList.add("hidden");
+      document.getElementById("resultsCard").classList.add("hidden");
+      document.getElementById("fileInput").value = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // ─── UI Helpers ──────────────────────────────────────────────
+    function toggleLoginLoading(loading) {
+      document.getElementById("loginBtn").disabled = loading;
+      document.getElementById("loginBtnText").textContent = loading ? "Authenticating..." : "Unlock Portal";
+      document.getElementById("loginSpinner").classList.toggle("hidden", !loading);
+    }
+    function toggleUploadLoading(loading) {
+      document.getElementById("uploadBtn").disabled = loading;
+      document.getElementById("uploadBtnText").textContent = loading ? "Processing..." : "Upload & Extract";
+      document.getElementById("uploadSpinner").classList.toggle("hidden", !loading);
+    }
+    function toggleConfirmLoading(loading) {
+      document.getElementById("confirmBtn").disabled = loading;
+      document.getElementById("confirmBtnText").textContent = loading ? "Sending..." : "Confirm & Send Notifications";
+      document.getElementById("confirmSpinner").classList.toggle("hidden", !loading);
+    }
+
+    function showAlert(id, message) {
+      const el = document.getElementById(id);
+      el.style.display = "flex";
+      el.querySelector("span").textContent = message;
+    }
+    function hideAlert(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function escapeHtml(str) { return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+    function escapeAttr(str) { return String(str).replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+    // Enter key on password field
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("adminPassword").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleLogin();
+      });
+    });
+  </script>
+</body>
+</html>
