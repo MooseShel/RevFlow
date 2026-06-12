@@ -660,9 +660,11 @@
         if (data.records) {
           data.records.forEach((r, i) => {
             if (r.extracted) {
-              dlog('success', `✓ Extracted: ${r.extracted.patientName || r.filename}`, r.extracted);
-              updateFileStatus(i, "ready", "✓ Ready");
-              extractedRecords.push(r.extracted);
+              const recordsList = Array.isArray(r.extracted) ? r.extracted : [r.extracted];
+              const count = recordsList.length;
+              dlog('success', `✓ Extracted: ${count} patient(s) from ${r.filename}`, r.extracted);
+              updateFileStatus(i, "ready", `✓ Ready (${count})`);
+              extractedRecords.push(...recordsList);
             } else {
               dlog('error', `✗ Failed: ${r.filename}`, r.error);
               updateFileStatus(i, "failed", "✗ Failed");
@@ -781,7 +783,9 @@
     function deleteReviewRow(index) {
       extractedRecords.splice(index, 1);
       // Re-render
-      const data = { totalFiles: selectedFiles.length, extracted: extractedRecords.length, failed: selectedFiles.length - extractedRecords.length };
+      const succeededFilesCount = new Set(extractedRecords.map(r => r.pdfFilename)).size;
+      const failedFilesCount = selectedFiles.length - succeededFilesCount;
+      const data = { totalFiles: selectedFiles.length, extracted: extractedRecords.length, failed: failedFilesCount };
       showReviewTable(data);
       if (extractedRecords.length === 0) {
         document.getElementById("reviewCard").classList.add("hidden");

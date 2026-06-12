@@ -21,19 +21,23 @@ export interface ExtractedRecord {
   pdfFilename: string;
 }
 
-const EXTRACTION_PROMPT = `You are a medical billing data extraction assistant. Analyze the provided PDF billing statement and extract the following patient and billing information.
+const EXTRACTION_PROMPT = `You are a medical billing data extraction assistant. Analyze the provided PDF billing statement and extract all patient and billing records. If the PDF contains billing statements for multiple patients or multiple separate billing statements, extract each of them as a separate item in the records list. If there is only one patient, return a list with exactly one record.
 
-Return ONLY a valid JSON object with these exact fields — no markdown, no explanation, no code fences:
+Return ONLY a valid JSON object with a "records" field containing an array of patient records, with these exact fields:
 
 {
-  "patientName": "Full patient name",
-  "email": "Patient email address, or empty string if not found",
-  "phone": "Patient phone number in E.164 format (e.g. +15551234567), or empty string if not found",
-  "zipCode": "Patient ZIP code (5 digits), or empty string if not found",
-  "ssnLast4": "Last 4 digits of patient SSN, or empty string if not found",
-  "totalDue": 0.00,
-  "facilityName": "Name of the medical facility / provider",
-  "statementDate": "Statement date in YYYY-MM-DD format, or empty string if not found"
+  "records": [
+    {
+      "patientName": "Full patient name",
+      "email": "Patient email address, or empty string if not found",
+      "phone": "Patient phone number in E.164 format (e.g. +15551234567), or empty string if not found",
+      "zipCode": "Patient ZIP code (5 digits), or empty string if not found",
+      "ssnLast4": "Last 4 digits of patient SSN, or empty string if not found",
+      "totalDue": 0.00,
+      "facilityName": "Name of the medical facility / provider",
+      "statementDate": "Statement date in YYYY-MM-DD format, or empty string if not found"
+    }
+  ]
 }
 
 Rules:
@@ -41,7 +45,7 @@ Rules:
 - If a field is not present in the document, return an empty string (or 0.00 for totalDue)
 - Do NOT invent or hallucinate data — only extract what is explicitly stated in the document
 - Phone numbers should include country code if available, otherwise assume +1 (US)
-- Return ONLY the JSON object, nothing else`;
+- Return ONLY the JSON object containing the "records" array, nothing else`;
 
 /**
  * Robustly extracts a JSON object from Gemini response text.
@@ -102,12 +106,12 @@ function extractJsonFromText(text: string): Record<string, any> | null {
  * Extracts structured patient billing data from a PDF using Gemini AI.
  * @param pdfBytes - Raw PDF file bytes
  * @param filename - Original filename (for logging/tracking only)
- * @returns Extracted patient record
+ * @returns Array of extracted patient records
  */
 export async function extractPatientData(
   pdfBytes: Uint8Array,
   filename: string
-): Promise<ExtractedRecord> {
+): Promise<ExtractedRecord[]> {
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY is not configured. Cannot extract PDF data.");
   }
@@ -148,16 +152,25 @@ export async function extractPatientData(
       responseSchema: {
         type: "object",
         properties: {
-          patientName: { type: "string" },
-          email: { type: "string" },
-          phone: { type: "string" },
-          zipCode: { type: "string" },
-          ssnLast4: { type: "string" },
-          totalDue: { type: "number" },
-          facilityName: { type: "string" },
-          statementDate: { type: "string" },
+          records: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                patientName: { type: "string" },
+                email: { type: "string" },
+                phone: { type: "string" },
+                zipCode: { type: "string" },
+                ssnLast4: { type: "string" },
+                totalDue: { type: "number" },
+                facilityName: { type: "string" },
+                statementDate: { type: "string" },
+              },
+              required: ["patientName", "totalDue", "facilityName"],
+            },
+          },
         },
-        required: ["patientName", "totalDue", "facilityName"],
+        required: ["records"],
       },
     },
   };
@@ -246,22 +259,23 @@ export async function extractPatientData(
       }
 
       const parsed = extracted;
+      const rawRecords = Array.isArray(parsed.records) ? parsed.records : (parsed.patientName ? [parsed] : []);
 
-      // Validate and normalize the extracted record
-      const record: ExtractedRecord = {
-        patientName: String(parsed.patientName || "").trim(),
-        email: String(parsed.email || "").trim(),
-        phone: String(parsed.phone || "").trim(),
-        zipCode: String(parsed.zipCode || "").trim(),
-        ssnLast4: String(parsed.ssnLast4 || "").trim(),
-        totalDue: typeof parsed.totalDue === "number" ? parsed.totalDue : parseFloat(parsed.totalDue) || 0,
-        facilityName: String(parsed.facilityName || "").trim(),
-        statementDate: String(parsed.statementDate || "").trim(),
+      // Validate and normalize the extracted records
+      const records: ExtractedRecord[] = rawRecords.map((item: any) => ({
+        patientName: String(item.patientName || "").trim(),
+        email: String(item.email || "").trim(),
+        phone: String(item.phone || "").trim(),
+        zipCode: String(item.zipCode || "").trim(),
+        ssnLast4: String(item.ssnLast4 || "").trim(),
+        totalDue: typeof item.totalDue === "number" ? item.totalDue : parseFloat(item.totalDue) || 0,
+        facilityName: String(item.facilityName || "").trim(),
+        statementDate: String(item.statementDate || "").trim(),
         pdfFilename: filename,
-      };
+      }));
 
-      logger.info("Successfully extracted patient data from PDF via Gemini", { filename });
-      return record;
+      logger.info("Successfully extracted patient data from PDF via Gemini", { filename, count: records.length });
+      return records;
 
     } catch (error: any) {
       lastError = error;

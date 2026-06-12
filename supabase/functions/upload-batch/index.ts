@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
 
       logger.info(`Processing upload batch of ${files.length} PDF files`);
 
-      const results: Array<{ filename: string; extracted?: ExtractedRecord; error?: string }> = [];
+      const results: Array<{ filename: string; extracted?: ExtractedRecord[]; error?: string }> = [];
 
       for (const file of files) {
         try {
@@ -167,7 +167,12 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      const successCount = results.filter((r) => r.extracted).length;
+      let successCount = 0;
+      for (const r of results) {
+        if (r.extracted) {
+          successCount += r.extracted.length;
+        }
+      }
       const failCount = results.filter((r) => r.error).length;
 
       logger.info("Upload batch extraction completed", { total: files.length, succeeded: successCount, failed: failCount });
