@@ -4,18 +4,24 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL;
+const dbUser = process.env.DB_USER;
+const dbPassword = process.env.DB_PASSWORD;
+const dbHost = process.env.DB_HOST;
+const dbPort = process.env.DB_PORT || "5432";
+const dbName = process.env.DB_NAME;
 
-if (!connectionString) {
-  logger.error("DATABASE_URL environment variable is missing.");
-  throw new Error("DATABASE_URL environment variable is missing.");
+if (!dbUser || !dbPassword || !dbHost || !dbName) {
+  logger.error("Required database configuration variables (DB_USER, DB_PASSWORD, DB_HOST, DB_NAME) are missing.");
+  throw new Error("Required database configuration variables are missing.");
 }
+
+const connectionString = `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
 
 // Initialize connection pool
 // For railway/external databases, SSL is usually required.
 export const pool = new Pool({
   connectionString,
-  ssl: connectionString.includes("localhost") || connectionString.includes("127.0.0.1")
+  ssl: dbHost.includes("localhost") || dbHost.includes("127.0.0.1")
     ? false
     : { rejectUnauthorized: false },
 });
