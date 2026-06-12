@@ -263,8 +263,32 @@
     /* Section Visibility */
     .hidden { display: none !important; }
 
+    /* Debug Log Panel */
+    .debug-panel { position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; transition: transform 0.3s ease; }
+    .debug-panel.collapsed { transform: translateY(calc(100% - 36px)); }
+    .debug-toggle {
+      display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+      background: rgba(15,23,42,0.95); border-top: 1px solid rgba(6,182,212,0.3);
+      cursor: pointer; font-size: 12px; font-weight: 600; color: var(--primary-cyan);
+      user-select: none;
+    }
+    .debug-toggle .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success-color); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .debug-log {
+      background: rgba(2,6,23,0.97); padding: 12px 16px;
+      max-height: 280px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 11px;
+      line-height: 1.6; border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .debug-log .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+    .log-time { color: #475569; margin-right: 8px; }
+    .log-info { color: #06b6d4; }
+    .log-success { color: #10b981; }
+    .log-warn { color: #f59e0b; }
+    .log-error { color: #f43f5e; }
+    .log-data { color: #94a3b8; font-size: 10px; display: block; padding-left: 20px; white-space: pre-wrap; word-break: break-all; }
+
     /* Footer */
-    .footer { text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 40px; padding-bottom: 24px; }
+    .footer { text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 40px; padding-bottom: 60px; }
     .footer a { color: var(--primary-cyan); text-decoration: none; }
 
     /* Responsive */
@@ -402,16 +426,56 @@
     </div>
   </div>
 
+  <!-- Debug Log Panel -->
+  <div class="debug-panel collapsed" id="debugPanel">
+    <div class="debug-toggle" onclick="toggleDebugPanel()">
+      <span class="dot"></span>
+      <span>Debug Console</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--text-dim)" id="logCount">0 entries</span>
+      <span id="debugArrow">▲</span>
+    </div>
+    <div class="debug-log" id="debugLog"></div>
+  </div>
+
   <script>
     // ─── Configuration ───────────────────────────────────────────
     const EDGE_FUNCTION_BASE = "https://cgrvrprtgughfhqporkl.supabase.co/functions/v1/upload-batch";
     let adminToken = sessionStorage.getItem("revflow_admin_token") || "";
     let selectedFiles = [];
     let extractedRecords = [];
+    let logEntryCount = 0;
+
+    // ─── Debug Logger ────────────────────────────────────────────
+    function dlog(level, message, data) {
+      const panel = document.getElementById('debugLog');
+      const countEl = document.getElementById('logCount');
+      const time = new Date().toLocaleTimeString('en-US', {hour12:false});
+      const cls = level === 'error' ? 'log-error' : level === 'warn' ? 'log-warn' : level === 'success' ? 'log-success' : 'log-info';
+      let html = `<div class="log-entry"><span class="log-time">${time}</span><span class="${cls}">[${level.toUpperCase()}] ${escapeHtml(message)}</span>`;
+      if (data !== undefined) {
+        const dataStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        html += `<span class="log-data">${escapeHtml(dataStr)}</span>`;
+      }
+      html += '</div>';
+      panel.innerHTML += html;
+      panel.scrollTop = panel.scrollHeight;
+      logEntryCount++;
+      countEl.textContent = logEntryCount + ' entries';
+      // Auto-expand on first error
+      if (level === 'error') { document.getElementById('debugPanel').classList.remove('collapsed'); }
+    }
+    function toggleDebugPanel() {
+      const p = document.getElementById('debugPanel');
+      p.classList.toggle('collapsed');
+      document.getElementById('debugArrow').textContent = p.classList.contains('collapsed') ? '▲' : '▼';
+    }
 
     // Auto-login if session token exists
     document.addEventListener("DOMContentLoaded", () => {
+      dlog('info', 'Admin portal initialized');
+      dlog('info', 'Edge Function base URL', EDGE_FUNCTION_BASE);
       if (adminToken) {
+        dlog('info', 'Found stored session token, verifying...');
         verifyStoredToken();
       }
       setupDropZone();
@@ -424,13 +488,19 @@
 
       toggleLoginLoading(true);
       hideAlert("loginError");
+      dlog('info', 'Attempting login...');
 
       try {
-        const res = await fetch(`${EDGE_FUNCTION_BASE}/auth`, {
+        const url = `${EDGE_FUNCTION_BASE}/auth`;
+        dlog('info', 'POST ' + url);
+        const res = await fetch(url, {
           method: "POST",
           headers: { "Authorization": `Bearer ${password}`, "Content-Type": "application/json" },
           body: JSON.stringify({}),
         });
+
+        const body = await res.json().catch(() => null);
+        dlog(res.ok ? 'success' : 'warn', `Auth response: HTTP ${res.status}`, body);
 
         if (res.ok) {
           adminToken = password;
@@ -440,6 +510,7 @@
           showAlert("loginError", "Invalid admin password. Please try again.");
         }
       } catch (err) {
+        dlog('error', 'Login fetch failed', err.message);
         showAlert("loginError", "Connection failed. Please check your network.");
       } finally {
         toggleLoginLoading(false);
@@ -536,51 +607,76 @@
       if (selectedFiles.length === 0) return;
 
       toggleUploadLoading(true);
-      // Disable remove buttons during upload
       document.querySelectorAll(".file-remove").forEach(b => b.disabled = true);
-
-      // Update all statuses to uploading
       selectedFiles.forEach((_, i) => updateFileStatus(i, "uploading", "Uploading..."));
+
+      dlog('info', `Starting upload of ${selectedFiles.length} file(s)`);
+      selectedFiles.forEach(f => dlog('info', `  → ${f.name} (${formatSize(f.size)}, type: ${f.type})`));
 
       try {
         const formData = new FormData();
         selectedFiles.forEach((f) => formData.append("files", f));
 
-        // Update to extracting
         selectedFiles.forEach((_, i) => updateFileStatus(i, "extracting", "Extracting..."));
 
-        const res = await fetch(`${EDGE_FUNCTION_BASE}/upload`, {
+        const url = `${EDGE_FUNCTION_BASE}/upload`;
+        dlog('info', 'POST ' + url);
+
+        const res = await fetch(url, {
           method: "POST",
           headers: { "Authorization": `Bearer ${adminToken}` },
           body: formData,
         });
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Upload failed (HTTP ${res.status})`);
+        dlog('info', `Response status: HTTP ${res.status}`);
+
+        const rawText = await res.text();
+        dlog('info', 'Raw response body', rawText);
+
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (parseErr) {
+          dlog('error', 'Failed to parse response as JSON', rawText.substring(0, 500));
+          throw new Error(`Server returned invalid JSON (HTTP ${res.status})`);
         }
 
-        const data = await res.json();
+        if (!res.ok) {
+          dlog('error', 'Upload failed', data);
+          throw new Error(data.error || `Upload failed (HTTP ${res.status})`);
+        }
+
+        dlog('success', `Upload response received`, { totalFiles: data.totalFiles, extracted: data.extracted, failed: data.failed });
+
         extractedRecords = [];
 
         // Process results
-        data.records.forEach((r, i) => {
-          if (r.extracted) {
-            updateFileStatus(i, "ready", "✓ Ready");
-            extractedRecords.push(r.extracted);
-          } else {
-            updateFileStatus(i, "failed", "✗ Failed");
-          }
-        });
+        if (data.records) {
+          data.records.forEach((r, i) => {
+            if (r.extracted) {
+              dlog('success', `✓ Extracted: ${r.extracted.patientName || r.filename}`, r.extracted);
+              updateFileStatus(i, "ready", "✓ Ready");
+              extractedRecords.push(r.extracted);
+            } else {
+              dlog('error', `✗ Failed: ${r.filename}`, r.error);
+              updateFileStatus(i, "failed", "✗ Failed");
+            }
+          });
+        } else {
+          dlog('warn', 'No records array in response', data);
+        }
 
         // Show review table
         if (extractedRecords.length > 0) {
+          dlog('success', `${extractedRecords.length} record(s) ready for review`);
           showReviewTable(data);
         } else {
-          alert("No data could be extracted from the uploaded PDFs. Please check the files and try again.");
+          dlog('error', 'No records extracted — check errors above');
+          alert("No data could be extracted from the uploaded PDFs. Check the Debug Console (bottom of page) for details.");
         }
 
       } catch (err) {
+        dlog('error', 'Upload exception', err.message);
         alert("Upload failed: " + err.message);
         selectedFiles.forEach((_, i) => updateFileStatus(i, "failed", "✗ Error"));
       } finally {

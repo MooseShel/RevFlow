@@ -4,7 +4,9 @@
 import postgres from "npm:postgres";
 import { logger } from "./logger.ts";
 
-const connectionString = Deno.env.get("SUPABASE_DB_EXTERNAL_URL") || (() => {
+const connectionString = Deno.env.get("SUPABASE_DB_URL")
+  || Deno.env.get("SUPABASE_DB_EXTERNAL_URL")
+  || (() => {
   const dbUser = Deno.env.get("DB_USER");
   const dbPassword = Deno.env.get("DB_PASSWORD");
   const dbHost = Deno.env.get("DB_HOST");
