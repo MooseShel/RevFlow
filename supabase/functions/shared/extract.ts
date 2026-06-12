@@ -44,6 +44,61 @@ Rules:
 - Return ONLY the JSON object, nothing else`;
 
 /**
+ * Robustly extracts a JSON object from Gemini response text.
+ * Handles: markdown fences, thinking blocks, control characters, and mixed content.
+ */
+function extractJsonFromText(text: string): Record<string, any> | null {
+  // 1. Strip markdown code fences (```json ... ``` or ``` ... ```)
+  let cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+
+  // 2. Remove control characters that break JSON.parse (tabs, newlines inside strings)
+  cleaned = cleaned.replace(/[\x00-\x1f]/g, (ch) => {
+    if (ch === "\n" || ch === "\r" || ch === "\t") return " ";
+    return "";
+  });
+
+  // 3. Try direct parse first
+  try {
+    return JSON.parse(cleaned);
+  } catch { /* continue */ }
+
+  // 4. Try to find a JSON object anywhere in the text using brace matching
+  const firstBrace = cleaned.indexOf("{");
+  if (firstBrace === -1) return null;
+
+  // Find the matching closing brace by counting depth
+  let depth = 0;
+  let lastBrace = -1;
+  for (let i = firstBrace; i < cleaned.length; i++) {
+    if (cleaned[i] === "{") depth++;
+    else if (cleaned[i] === "}") {
+      depth--;
+      if (depth === 0) { lastBrace = i; break; }
+    }
+  }
+
+  if (lastBrace === -1) return null;
+
+  const jsonCandidate = cleaned.substring(firstBrace, lastBrace + 1);
+
+  try {
+    return JSON.parse(jsonCandidate);
+  } catch { /* continue */ }
+
+  // 5. Last resort: fix common issues (trailing commas, single quotes)
+  const fixed = jsonCandidate
+    .replace(/,\s*}/g, "}")   // trailing commas
+    .replace(/,\s*]/g, "]")   // trailing commas in arrays
+    .replace(/'/g, '"');       // single quotes to double quotes
+
+  try {
+    return JSON.parse(fixed);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Extracts structured patient billing data from a PDF using Gemini AI.
  * @param pdfBytes - Raw PDF file bytes
  * @param filename - Original filename (for logging/tracking only)
@@ -85,6 +140,7 @@ export async function extractPatientData(
     generationConfig: {
       temperature: 0.1,
       maxOutputTokens: 1024,
+      responseMimeType: "application/json",
     },
   };
 
@@ -120,14 +176,15 @@ export async function extractPatientData(
         throw new Error("Gemini returned empty or malformed response — no text content found");
       }
 
-      // Parse JSON from response (strip any accidental markdown fences)
-      const cleanedJson = textContent
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/\s*```$/i, "")
-        .trim();
+      // Parse JSON from response — robust extraction handles markdown fences,
+      // thinking blocks, and other non-JSON wrapping Gemini may add
+      const extracted = extractJsonFromText(textContent);
+      if (!extracted) {
+        logger.error("Could not extract valid JSON from Gemini response", { filename, rawLength: textContent.length, preview: textContent.substring(0, 300) });
+        throw new Error("Gemini response did not contain valid JSON");
+      }
 
-      const parsed = JSON.parse(cleanedJson);
+      const parsed = extracted;
 
       // Validate and normalize the extracted record
       const record: ExtractedRecord = {
