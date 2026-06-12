@@ -577,6 +577,8 @@
         }
       }
       renderFileList();
+      // Reset input value so the same file can be selected again
+      document.getElementById("fileInput").value = "";
     }
 
     function removeFile(index) {
