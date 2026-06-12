@@ -189,38 +189,61 @@
     .file-remove:hover { color: var(--error-color); background: rgba(244,63,94,0.1); }
     .file-remove svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-    /* Review Table */
-    .table-wrapper { overflow-x: auto; margin-top: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 800px; }
-    thead th {
-      background: rgba(15,23,42,0.6); padding: 12px 14px;
-      text-align: left; font-weight: 600; font-size: 11px;
-      text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      position: sticky; top: 0;
+    /* Review Cards */
+    .review-cards { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+    .review-card-item {
+      background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 20px 24px; position: relative;
+      transition: border-color 0.2s;
     }
-    tbody td {
-      padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
-      vertical-align: middle;
+    .review-card-item:hover { border-color: rgba(6,182,212,0.2); }
+    .review-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
     }
-    tbody tr:hover { background: rgba(6,182,212,0.03); }
-    tbody tr:last-child td { border-bottom: none; }
-    td input {
-      width: 100%; background: transparent; border: 1px solid transparent;
-      border-radius: 6px; padding: 6px 8px; color: var(--text-main);
-      font-family: 'Inter', sans-serif; font-size: 13px; transition: all 0.2s;
+    .review-card-number {
+      font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+      color: var(--primary-cyan); background: rgba(6,182,212,0.1);
+      padding: 4px 12px; border-radius: 8px;
     }
-    td input:hover { border-color: rgba(255,255,255,0.1); }
-    td input:focus {
-      border-color: var(--primary-cyan); background: rgba(15,23,42,0.4);
-      box-shadow: 0 0 0 2px rgba(6,182,212,0.1); outline: none;
+    .review-card-pdf {
+      font-size: 11px; color: var(--text-dim); max-width: 200px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    td .row-delete {
-      background: none; border: none; color: var(--text-dim); cursor: pointer;
-      padding: 4px; border-radius: 6px; transition: all 0.2s;
+    .review-card-delete {
+      background: none; border: 1px solid rgba(244,63,94,0.2); color: var(--error-color);
+      cursor: pointer; padding: 6px 12px; border-radius: 8px; font-size: 11px;
+      font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 4px;
     }
-    td .row-delete:hover { color: var(--error-color); background: rgba(244,63,94,0.1); }
-    td .row-delete svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .review-card-delete:hover { background: rgba(244,63,94,0.1); border-color: var(--error-color); }
+    .review-card-delete svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .review-fields {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px;
+    }
+    .review-field label {
+      display: block; color: var(--text-muted); font-size: 10px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+    }
+    .review-field input {
+      width: 100%; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 10px 14px; color: var(--text-main);
+      font-family: 'Inter', sans-serif; font-size: 14px; transition: all 0.2s; outline: none;
+    }
+    .review-field input::placeholder { color: rgba(244,63,94,0.5); font-style: italic; font-size: 12px; }
+    .review-field input:hover { border-color: rgba(255,255,255,0.2); }
+    .review-field input:focus {
+      border-color: var(--primary-cyan); background: rgba(15,23,42,0.95);
+      box-shadow: 0 0 0 3px rgba(6,182,212,0.12);
+    }
+    .review-field input.field-empty { border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.05); }
+    .review-field.field-wide { grid-column: 1 / -1; }
+    .review-field-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 20px;
+    }
+    @media (max-width: 640px) {
+      .review-fields { grid-template-columns: 1fr; }
+      .review-field-row { grid-template-columns: 1fr; }
+    }
 
     /* Summary Stats */
     .stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -374,24 +397,7 @@
           Review and edit the AI-extracted patient data below. Click any cell to make corrections.
         </p>
         <div class="stats-row" id="extractionStats"></div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Patient Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>ZIP</th>
-                <th>SSN Last 4</th>
-                <th>Total Due</th>
-                <th>Facility</th>
-                <th>PDF</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="reviewTableBody"></tbody>
-          </table>
-        </div>
+        <div class="review-cards" id="reviewCardsContainer"></div>
         <div style="margin-top: 24px;">
           <button class="btn btn-success" id="confirmBtn" onclick="handleConfirm()">
             <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -696,7 +702,7 @@
     function showReviewTable(data) {
       const card = document.getElementById("reviewCard");
       const statsEl = document.getElementById("extractionStats");
-      const tbody = document.getElementById("reviewTableBody");
+      const container = document.getElementById("reviewCardsContainer");
 
       // Stats
       statsEl.innerHTML = `
@@ -705,24 +711,57 @@
         <div class="stat-card"><div class="stat-value">${data.failed}</div><div class="stat-label">Failed</div></div>
       `;
 
-      // Table rows
-      tbody.innerHTML = extractedRecords.map((r, i) => `
-        <tr id="review-row-${i}">
-          <td><input type="text" value="${escapeAttr(r.patientName)}" data-field="patientName" data-index="${i}"></td>
-          <td><input type="email" value="${escapeAttr(r.email)}" data-field="email" data-index="${i}"></td>
-          <td><input type="tel" value="${escapeAttr(r.phone)}" data-field="phone" data-index="${i}"></td>
-          <td><input type="text" value="${escapeAttr(r.zipCode)}" data-field="zipCode" data-index="${i}" maxlength="5" style="width:70px"></td>
-          <td><input type="text" value="${escapeAttr(r.ssnLast4)}" data-field="ssnLast4" data-index="${i}" maxlength="4" style="width:60px"></td>
-          <td><input type="number" value="${r.totalDue}" data-field="totalDue" data-index="${i}" step="0.01" style="width:90px"></td>
-          <td><input type="text" value="${escapeAttr(r.facilityName)}" data-field="facilityName" data-index="${i}"></td>
-          <td style="font-size:11px;color:var(--text-dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeAttr(r.pdfFilename)}">${escapeHtml(r.pdfFilename.split('_').slice(1).join('_') || r.pdfFilename)}</td>
-          <td><button class="row-delete" onclick="deleteReviewRow(${i})" title="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>
-        </tr>
-      `).join("");
+      // Render cards
+      container.innerHTML = extractedRecords.map((r, i) => {
+        const pdfDisplay = r.pdfFilename ? (r.pdfFilename.split('_').slice(1).join('_') || r.pdfFilename) : 'Unknown';
+        return `
+        <div class="review-card-item" id="review-card-${i}">
+          <div class="review-card-header">
+            <span class="review-card-number">Patient #${i + 1}</span>
+            <span class="review-card-pdf" title="${escapeAttr(r.pdfFilename)}">📄 ${escapeHtml(pdfDisplay)}</span>
+            <button class="review-card-delete" onclick="deleteReviewRow(${i})">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Remove
+            </button>
+          </div>
+          <div class="review-fields">
+            <div class="review-field">
+              <label>Patient Name</label>
+              <input type="text" value="${escapeAttr(r.patientName)}" placeholder="⚠ Enter patient name" data-field="patientName" data-index="${i}" class="${!r.patientName ? 'field-empty' : ''}">
+            </div>
+            <div class="review-field">
+              <label>Email Address</label>
+              <input type="email" value="${escapeAttr(r.email)}" placeholder="⚠ Enter email address" data-field="email" data-index="${i}" class="${!r.email ? 'field-empty' : ''}">
+            </div>
+            <div class="review-field">
+              <label>Phone Number</label>
+              <input type="tel" value="${escapeAttr(r.phone)}" placeholder="⚠ Enter phone (e.g. +15551234567)" data-field="phone" data-index="${i}" class="${!r.phone ? 'field-empty' : ''}">
+            </div>
+            <div class="review-field">
+              <label>Facility Name</label>
+              <input type="text" value="${escapeAttr(r.facilityName)}" placeholder="Enter facility name" data-field="facilityName" data-index="${i}">
+            </div>
+          </div>
+          <div class="review-field-row" style="margin-top: 12px;">
+            <div class="review-field">
+              <label>ZIP Code</label>
+              <input type="text" value="${escapeAttr(r.zipCode)}" placeholder="⚠ 5-digit ZIP" data-field="zipCode" data-index="${i}" maxlength="5" class="${!r.zipCode ? 'field-empty' : ''}">
+            </div>
+            <div class="review-field">
+              <label>SSN Last 4</label>
+              <input type="text" value="${escapeAttr(r.ssnLast4)}" placeholder="⚠ Last 4 digits" data-field="ssnLast4" data-index="${i}" maxlength="4" class="${!r.ssnLast4 ? 'field-empty' : ''}">
+            </div>
+            <div class="review-field">
+              <label>Total Due ($)</label>
+              <input type="number" value="${r.totalDue}" placeholder="0.00" data-field="totalDue" data-index="${i}" step="0.01">
+            </div>
+          </div>
+        </div>`;
+      }).join("");
 
       // Listen for edits
-      tbody.querySelectorAll("input").forEach(input => {
-        input.addEventListener("change", (e) => {
+      container.querySelectorAll("input").forEach(input => {
+        input.addEventListener("input", (e) => {
           const idx = parseInt(e.target.dataset.index);
           const field = e.target.dataset.field;
           if (field === "totalDue") {
@@ -730,6 +769,8 @@
           } else {
             extractedRecords[idx][field] = e.target.value;
           }
+          // Remove empty styling when user types
+          e.target.classList.toggle('field-empty', !e.target.value);
         });
       });
 
