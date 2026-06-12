@@ -147,7 +147,7 @@ export async function extractPatientData(
     ],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       responseMimeType: "application/json",
       responseSchema: {
         type: "object",
