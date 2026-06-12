@@ -128,3 +128,55 @@ CREATE POLICY select_access_audit_logs_policy ON access_audit_logs
     FOR SELECT
     TO revflow_api
     USING (true);
+
+-- 7. ENABLE Serverless Ingestion and Cron Scheduling Extensions
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
+-- 8. CREATE Supabase Storage Bucket for PDF uploads and index files
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'billing-uploads', 
+    'billing-uploads', 
+    false, 
+    52428800, -- 50 MB limit
+    ARRAY['application/pdf', 'text/csv']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Enable Row-Level Security on storage objects
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Storage Policies for 'billing-uploads' bucket
+-- Allow service_role (backend edge functions) full access
+CREATE POLICY "service_role_billing_uploads_access" ON storage.objects
+    FOR ALL
+    TO service_role
+    USING (bucket_id = 'billing-uploads')
+    WITH CHECK (bucket_id = 'billing-uploads');
+
+-- Allow authenticated admins (e.g. billing managers) to upload, read, and delete billing batches
+CREATE POLICY "admin_billing_uploads_access" ON storage.objects
+    FOR ALL
+    TO authenticated
+    USING (bucket_id = 'billing-uploads')
+    WITH CHECK (bucket_id = 'billing-uploads');
+
+-- 9. SCHEDULE pg_cron Job
+-- Schedules an HTTP POST request to trigger the Deno Edge Function
+-- Replaces need for external/Railway cron orchestrations.
+SELECT cron.schedule(
+    'batch-billing-cron',
+    '0 9 * * 1-5', -- 9:00 AM Mon-Fri
+    $$ SELECT net.http_post(
+         'https://cgrvrprtgughfhqporkl.supabase.co/functions/v1/batch-billing',
+         '{}'::jsonb,
+         '{}'::jsonb,
+         jsonb_build_object(
+             'Content-Type', 'application/json',
+             -- Uses authorization header with service_role key to invoke function
+             'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+         ),
+         timeout_ms => 120000
+       ) $$
+);
