@@ -744,14 +744,10 @@
               <input type="text" value="${escapeAttr(r.facilityName)}" placeholder="Enter facility name" data-field="facilityName" data-index="${i}">
             </div>
           </div>
-          <div class="review-field-row" style="margin-top: 12px;">
+          <div class="review-field-row" style="margin-top: 12px; grid-template-columns: 1fr 1fr;">
             <div class="review-field">
               <label>ZIP Code</label>
               <input type="text" value="${escapeAttr(r.zipCode)}" placeholder="⚠ 5-digit ZIP" data-field="zipCode" data-index="${i}" maxlength="5" class="${!r.zipCode ? 'field-empty' : ''}">
-            </div>
-            <div class="review-field">
-              <label>SSN Last 4</label>
-              <input type="text" value="${escapeAttr(r.ssnLast4)}" placeholder="⚠ Last 4 digits" data-field="ssnLast4" data-index="${i}" maxlength="4" class="${!r.ssnLast4 ? 'field-empty' : ''}">
             </div>
             <div class="review-field">
               <label>Total Due ($)</label>
@@ -799,8 +795,8 @@
       // Validate required fields
       for (let i = 0; i < extractedRecords.length; i++) {
         const r = extractedRecords[i];
-        if (!r.zipCode || !r.ssnLast4) {
-          alert(`Row ${i + 1} (${r.patientName || 'Unknown'}): ZIP Code and SSN Last 4 are required for verification token generation.`);
+        if (!r.zipCode) {
+          alert(`Row ${i + 1} (${r.patientName || 'Unknown'}): ZIP Code is required for verification token generation.`);
           return;
         }
         if (!r.email && !r.phone) {

@@ -36,14 +36,13 @@ async function ingest() {
 
     // Hash verification keys
     const hashedZip = crypto.createHash("sha256").update(stmt.zipCode || "PENDING").digest("hex");
-    const hashedSsn = crypto.createHash("sha256").update(stmt.ssnLast4 || "PENDING").digest("hex");
 
     // Insert verification token
     const tr = await queryAdmin(
-      `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_ssn_last4)
-       VALUES ($1, $2, $3)
+      `INSERT INTO verification_tokens (statement_id, hashed_zip)
+       VALUES ($1, $2)
        RETURNING token_id`,
-      [statementId, hashedZip, hashedSsn]
+      [statementId, hashedZip]
     );
     const tokenId = tr.rows[0].token_id;
 

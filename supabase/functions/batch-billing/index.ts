@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
     for (const row of dataRows) {
       if (row.length < 8) continue; // skip invalid rows
       
-      const [patientId, patientName, email, phone, zipCode, ssnLast4, totalDueStr, pdfFilename] = row;
+      const [patientId, patientName, email, phone, zipCode, _ssnLast4, totalDueStr, pdfFilename] = row;
       const totalDue = parseFloat(totalDueStr);
 
       // Verify corresponding PDF statement file exists in storage root
@@ -110,7 +110,6 @@ Deno.serve(async (req: Request) => {
         email,
         phone,
         zipCode,
-        ssnLast4,
         totalDue,
         facilityName: "GoRev Medical Facility",
         statementDate: new Date().toISOString().slice(0, 10),

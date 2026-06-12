@@ -106,7 +106,7 @@ app.post("/api/verify", async (req: Request, res: Response) => {
     const verificationResult = await runInRLSTransaction({ tokenId: token }, async (client) => {
       // 1. Retrieve the token record (bound by RLS policy: select_verification_tokens_policy)
       const tokenRes = await client.query(
-        `SELECT token_id, statement_id, hashed_zip, hashed_ssn_last4, expires_at, consumed_at 
+        `SELECT token_id, statement_id, hashed_zip, expires_at, consumed_at 
          FROM verification_tokens 
          WHERE token_id = $1`,
         [token]
@@ -138,16 +138,15 @@ app.post("/api/verify", async (req: Request, res: Response) => {
 
       // 3. Compare hashes
       const zipMatch = hashedInput === tokenRecord.hashed_zip;
-      const ssnMatch = hashedInput === tokenRecord.hashed_ssn_last4;
 
-      if (!zipMatch && !ssnMatch) {
+      if (!zipMatch) {
         logger.warn("Identity verification failed (incorrect key)", { token, ip: ipAddress });
         
         // Log the failure
         await client.query(
           `INSERT INTO access_audit_logs (token_id, event_type, ip_address, user_agent, metadata)
            VALUES ($1, 'ATTEMPT_FAIL', $2, $3, $4)`,
-          [tokenRecord.token_id, ipAddress, userAgent, JSON.stringify({ reason: "Incorrect ZIP or SSN last4" })]
+          [tokenRecord.token_id, ipAddress, userAgent, JSON.stringify({ reason: "Incorrect ZIP" })]
         );
         
         return { verified: false, status: 401, error: "Identity verification failed. Please enter the correct details." };

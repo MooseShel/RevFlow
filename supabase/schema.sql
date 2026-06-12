@@ -23,7 +23,7 @@ CREATE TABLE verification_tokens (
     token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     statement_id UUID NOT NULL REFERENCES billing_statements(statement_id) ON DELETE CASCADE,
     hashed_zip VARCHAR(64) NOT NULL, -- SHA-256 hash of ZIP code
-    hashed_ssn_last4 VARCHAR(64) NOT NULL, -- SHA-256 hash of last 4 SSN
+    hashed_ssn_last4 VARCHAR(64), -- SHA-256 hash of last 4 SSN
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '72 hours'),
     consumed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()

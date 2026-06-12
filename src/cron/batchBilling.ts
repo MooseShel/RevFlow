@@ -78,14 +78,13 @@ export async function runBatchIngestion(
       // 2. Generate hashed verification keys (SHA-256)
       //    If demographics are not yet linked (PDF source without CSV), use available data
       const hashedZip = stmt.zipCode ? hashKey(stmt.zipCode) : hashKey("PENDING");
-      const hashedSsnLast4 = stmt.ssnLast4 ? hashKey(stmt.ssnLast4) : hashKey("PENDING");
 
       // 3. Create the verification token (admin query)
       const tokenRes = await queryAdmin(
-        `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_ssn_last4)
-         VALUES ($1, $2, $3)
+        `INSERT INTO verification_tokens (statement_id, hashed_zip)
+         VALUES ($1, $2)
          RETURNING token_id`,
-        [statementId, hashedZip, hashedSsnLast4]
+        [statementId, hashedZip]
       );
       
       const tokenId = tokenRes.rows[0].token_id;

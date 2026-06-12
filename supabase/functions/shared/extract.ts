@@ -14,7 +14,6 @@ export interface ExtractedRecord {
   email: string;
   phone: string;
   zipCode: string;
-  ssnLast4: string;
   totalDue: number;
   facilityName: string;
   statementDate: string;
@@ -32,7 +31,6 @@ Return ONLY a valid JSON object with a "records" field containing an array of pa
       "email": "Patient email address, or empty string if not found",
       "phone": "Patient phone number in E.164 format (e.g. +15551234567), or empty string if not found",
       "zipCode": "Patient ZIP code (5 digits), or empty string if not found",
-      "ssnLast4": "Last 4 digits of patient SSN, or empty string if not found",
       "totalDue": 0.00,
       "facilityName": "Name of the medical facility / provider",
       "statementDate": "Statement date in YYYY-MM-DD format, or empty string if not found"
@@ -161,7 +159,6 @@ export async function extractPatientData(
                 email: { type: "string" },
                 phone: { type: "string" },
                 zipCode: { type: "string" },
-                ssnLast4: { type: "string" },
                 totalDue: { type: "number" },
                 facilityName: { type: "string" },
                 statementDate: { type: "string" },
@@ -267,7 +264,6 @@ export async function extractPatientData(
         email: String(item.email || "").trim(),
         phone: String(item.phone || "").trim(),
         zipCode: String(item.zipCode || "").trim(),
-        ssnLast4: String(item.ssnLast4 || "").trim(),
         totalDue: typeof item.totalDue === "number" ? item.totalDue : parseFloat(item.totalDue) || 0,
         facilityName: String(item.facilityName || "").trim(),
         statementDate: String(item.statementDate || "").trim(),

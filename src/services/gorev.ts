@@ -13,7 +13,6 @@ export interface GoRevStatement {
   email: string;
   phone: string;
   zipCode: string;
-  ssnLast4: string;
   totalDue: number;
   statementPdfUrl: string;
   metadata: {
@@ -104,7 +103,6 @@ export class GoRevPdfConnector implements IGoRevConnector {
       email: "",
       phone: "",
       zipCode: this.extractZipFromAddress(parsed.cityStateZip),
-      ssnLast4: "",
       totalDue: parsed.balance,
       statementPdfUrl: pdfPath, // Local path; will be replaced with Supabase URL after upload
       metadata: {
@@ -165,7 +163,6 @@ export class GoRevMockConnector implements IGoRevConnector {
         email: "alexander.hamilton@example.com",
         phone: "+15550100021",
         zipCode: "10005",
-        ssnLast4: "1789",
         totalDue: 145.20,
         statementPdfUrl: "https://example.com/secure/statements/PAT-2026-9812.pdf",
         metadata: {
@@ -180,7 +177,6 @@ export class GoRevMockConnector implements IGoRevConnector {
         email: "elizabeth.schuyler@example.com",
         phone: "+15550100032",
         zipCode: "12207",
-        ssnLast4: "1854",
         totalDue: 450.00,
         statementPdfUrl: "https://example.com/secure/statements/PAT-2026-0442.pdf",
         metadata: {
@@ -195,7 +191,6 @@ export class GoRevMockConnector implements IGoRevConnector {
         email: "aaron.burr@example.com",
         phone: "+15550100043",
         zipCode: "07030",
-        ssnLast4: "1804",
         totalDue: 12.50,
         statementPdfUrl: "https://example.com/secure/statements/PAT-2026-7718.pdf",
         metadata: {

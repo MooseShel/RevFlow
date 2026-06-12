@@ -55,6 +55,13 @@ async function migrate() {
   `);
   console.log('✓ Added notification tracking to verification_tokens');
 
+  // 5.5. Remove NOT NULL constraint on hashed_ssn_last4
+  await c.query(`
+    ALTER TABLE verification_tokens
+    ALTER COLUMN hashed_ssn_last4 DROP NOT NULL;
+  `);
+  console.log('✓ Made hashed_ssn_last4 nullable in verification_tokens');
+
   // 6. Grant permissions to revflow_api role (if exists)
   try {
     await c.query(`GRANT SELECT, INSERT ON batch_uploads TO revflow_api;`);

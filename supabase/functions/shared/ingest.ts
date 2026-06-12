@@ -35,7 +35,6 @@ export interface StatementRecord {
   email: string;
   phone: string;
   zipCode: string;
-  ssnLast4: string;
   totalDue: number;
   facilityName: string;
   statementDate: string;
@@ -95,17 +94,16 @@ export async function processStatementRecord(
     const statementRes = await queryAdmin(insertQuery, insertParams);
     const statementId = statementRes.rows[0].statement_id;
 
-    // 2. Hash verification keys: SSN last 4 + phone last 4
-    const hashedSsnLast4 = record.ssnLast4 ? await hashKey(record.ssnLast4) : "";
+    // 2. Hash verification keys: phone last 4
     const hashedPhone = record.phone ? await hashKey(phoneLast4(record.phone)) : "";
     const hashedZip = record.zipCode ? await hashKey(record.zipCode) : "";
 
     // 3. Create verification token with hashed_phone
     const tokenRes = await queryAdmin(
-      `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_ssn_last4, hashed_phone)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO verification_tokens (statement_id, hashed_zip, hashed_phone)
+       VALUES ($1, $2, $3)
        RETURNING token_id`,
-      [statementId, hashedZip, hashedSsnLast4, hashedPhone]
+      [statementId, hashedZip, hashedPhone]
     );
     const tokenId = tokenRes.rows[0].token_id;
 

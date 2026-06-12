@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     const result = await runInRLSTransaction({ tokenId: token }, async (sqlTx) => {
       // 1. Fetch active verification token matching ID (bounded by RLS)
       const tokenRes = await sqlTx`
-        SELECT token_id, statement_id, hashed_ssn_last4, hashed_phone, expires_at, consumed_at 
+        SELECT token_id, statement_id, hashed_phone, expires_at, consumed_at 
         FROM verification_tokens 
         WHERE token_id = ${token}
       `;
@@ -92,15 +92,14 @@ Deno.serve(async (req: Request) => {
         return { verified: false, status: 401, error: "This statement link has expired." };
       }
 
-      // 4. Verify match against SSN last 4 or phone last 4
-      const ssnMatch = tokenRecord.hashed_ssn_last4 && hashedInput === tokenRecord.hashed_ssn_last4;
+      // 4. Verify match against phone last 4
       const phoneMatch = tokenRecord.hashed_phone && hashedInput === tokenRecord.hashed_phone;
 
-      if (!ssnMatch && !phoneMatch) {
+      if (!phoneMatch) {
         logger.warn("Verification failed: incorrect details", { token, ip: ipAddress });
         await sqlTx`
           INSERT INTO access_audit_logs (token_id, event_type, ip_address, user_agent, metadata)
-          VALUES (${tokenRecord.token_id}, 'ATTEMPT_FAIL', ${ipAddress}, ${userAgent}, ${JSON.stringify({ reason: "Incorrect SSN last 4 or phone last 4" })})
+          VALUES (${tokenRecord.token_id}, 'ATTEMPT_FAIL', ${ipAddress}, ${userAgent}, ${JSON.stringify({ reason: "Incorrect phone last 4" })})
         `;
         return { verified: false, status: 401, error: "Identity verification failed. Please try again." };
       }
