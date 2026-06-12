@@ -501,7 +501,7 @@
         dlog('info', 'POST ' + url);
         const res = await fetch(url, {
           method: "POST",
-          headers: { "Authorization": `Bearer ${password}`, "Content-Type": "application/json" },
+          headers: { "x-admin-key": password, "Content-Type": "application/json" },
           body: JSON.stringify({}),
         });
 
@@ -527,7 +527,7 @@
       try {
         const res = await fetch(`${EDGE_FUNCTION_BASE}/auth`, {
           method: "POST",
-          headers: { "Authorization": `Bearer ${adminToken}`, "Content-Type": "application/json" },
+          headers: { "x-admin-key": adminToken, "Content-Type": "application/json" },
           body: JSON.stringify({}),
         });
         if (res.ok) {
@@ -630,7 +630,7 @@
 
         const res = await fetch(url, {
           method: "POST",
-          headers: { "Authorization": `Bearer ${adminToken}` },
+          headers: { "x-admin-key": adminToken },
           body: formData,
         });
 
@@ -815,7 +815,7 @@
         const res = await fetch(`${EDGE_FUNCTION_BASE}/confirm`, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${adminToken}`,
+            "x-admin-key": adminToken,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ records: extractedRecords }),

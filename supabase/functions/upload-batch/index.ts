@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-key",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -22,6 +22,12 @@ const corsHeaders = {
  * Validates admin authentication from the Authorization header.
  */
 function validateAuth(req: Request): boolean {
+  // Check x-admin-key custom header first (preferred — avoids Supabase JWT gateway rejection)
+  const adminKeyHeader = req.headers.get("x-admin-key");
+  if (adminKeyHeader) {
+    return adminKeyHeader === ADMIN_API_KEY;
+  }
+  // Fallback: check Authorization header (for backwards compatibility)
   const authHeader = req.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) return false;
   return authHeader.split(" ")[1] === ADMIN_API_KEY;
