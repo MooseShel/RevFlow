@@ -15,7 +15,7 @@ export interface ExtractedRecord {
   phone: string;
   zipCode: string;
   totalDue: number;
-  facilityName: string;
+  customerAccountId: string;
   statementDate: string;
   pdfFilename: string;
 }
@@ -32,7 +32,7 @@ Return ONLY a valid JSON object with a "records" field containing an array of pa
       "phone": "Patient phone number in E.164 format (e.g. +15551234567), or empty string if not found",
       "zipCode": "Patient ZIP code (5 digits), or empty string if not found",
       "totalDue": 0.00,
-      "facilityName": "Name of the medical facility / provider",
+      "customerAccountId": "Customer account ID / account number, or empty string if not found",
       "statementDate": "Statement date in YYYY-MM-DD format, or empty string if not found"
     }
   ]
@@ -160,10 +160,10 @@ export async function extractPatientData(
                 phone: { type: "string" },
                 zipCode: { type: "string" },
                 totalDue: { type: "number" },
-                facilityName: { type: "string" },
+                customerAccountId: { type: "string" },
                 statementDate: { type: "string" },
               },
-              required: ["patientName", "totalDue", "facilityName"],
+              required: ["patientName", "totalDue", "customerAccountId"],
             },
           },
         },
@@ -261,11 +261,11 @@ export async function extractPatientData(
       // Validate and normalize the extracted records
       const records: ExtractedRecord[] = rawRecords.map((item: any) => ({
         patientName: String(item.patientName || "").trim(),
-        email: String(item.email || "").trim(),
-        phone: String(item.phone || "").trim(),
+        email: "", // email is always blank/empty
+        phone: "", // phone is always blank/empty (bill file has firm number, not patient)
         zipCode: String(item.zipCode || "").trim(),
         totalDue: typeof item.totalDue === "number" ? item.totalDue : parseFloat(item.totalDue) || 0,
-        facilityName: String(item.facilityName || "").trim(),
+        customerAccountId: String(item.customerAccountId || "").trim(),
         statementDate: String(item.statementDate || "").trim(),
         pdfFilename: filename,
       }));

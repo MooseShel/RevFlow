@@ -1153,8 +1153,8 @@
               <input type="tel" value="${escapeAttr(r.phone)}" placeholder="⚠ Enter phone (e.g. +15551234567)" data-field="phone" data-index="${i}" class="${!r.phone ? 'field-empty' : ''}">
             </div>
             <div class="review-field">
-              <label>Facility Name</label>
-              <input type="text" value="${escapeAttr(r.facilityName)}" placeholder="Enter facility name" data-field="facilityName" data-index="${i}">
+              <label>Customer Account ID</label>
+              <input type="text" value="${escapeAttr(r.customerAccountId || '')}" placeholder="Enter Customer Account ID" data-field="customerAccountId" data-index="${i}">
             </div>
           </div>
           <div class="review-field-row" style="margin-top: 12px; grid-template-columns: 1fr 1fr;">

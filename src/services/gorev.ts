@@ -16,7 +16,7 @@ export interface GoRevStatement {
   totalDue: number;
   statementPdfUrl: string;
   metadata: {
-    facilityName: string;
+    customerAccountId: string;
     statementDate: string;
     accountNumber: string;
     [key: string]: any;
@@ -106,7 +106,7 @@ export class GoRevPdfConnector implements IGoRevConnector {
       totalDue: parsed.balance,
       statementPdfUrl: pdfPath, // Local path; will be replaced with Supabase URL after upload
       metadata: {
-        facilityName: parsed.facilityName,
+        customerAccountId: parsed.accountNumber,
         statementDate: parsed.visitDate,
         accountNumber: parsed.accountNumber,
         accountNumberBase: parsed.accountNumberBase,
@@ -166,7 +166,7 @@ export class GoRevMockConnector implements IGoRevConnector {
         totalDue: 145.20,
         statementPdfUrl: "https://example.com/secure/statements/PAT-2026-9812.pdf",
         metadata: {
-          facilityName: "Manhattan Medical Center",
+          customerAccountId: "ACT-88771",
           statementDate: "2026-06-01",
           accountNumber: "ACT-88771"
         }
@@ -180,7 +180,7 @@ export class GoRevMockConnector implements IGoRevConnector {
         totalDue: 450.00,
         statementPdfUrl: "https://example.com/secure/statements/PAT-2026-0442.pdf",
         metadata: {
-          facilityName: "Albany Family Practice",
+          customerAccountId: "ACT-32219",
           statementDate: "2026-06-05",
           accountNumber: "ACT-32219"
         }
@@ -194,7 +194,7 @@ export class GoRevMockConnector implements IGoRevConnector {
         totalDue: 12.50,
         statementPdfUrl: "https://example.com/secure/statements/PAT-2026-7718.pdf",
         metadata: {
-          facilityName: "Weehawken Health Pavilion",
+          customerAccountId: "ACT-99081",
           statementDate: "2026-06-10",
           accountNumber: "ACT-99081"
         }

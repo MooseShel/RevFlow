@@ -41,7 +41,7 @@ async function runE2E() {
   console.log(`  📋 Selected patient: ${stmt.patientName}`);
   console.log(`     Account:  ${stmt.metadata.accountNumber}`);
   console.log(`     Balance:  $${stmt.totalDue.toFixed(2)}`);
-  console.log(`     Facility: ${stmt.metadata.facilityName}`);
+  console.log(`     Account:  ${stmt.metadata.customerAccountId}`);
   console.log(`     ZIP:      ${stmt.zipCode}`);
   console.log();
 
@@ -123,7 +123,7 @@ async function runE2E() {
   console.log("║  5. Click 'Verify & View Statement'                         ║");
   console.log("║  6. You should see:                                         ║");
   console.log(`║     • Balance: $${stmt.totalDue.toFixed(2)}                              ║`);
-  console.log(`║     • Facility: ${stmt.metadata.facilityName}                      ║`);
+  console.log(`║     • Account ID: ${stmt.metadata.customerAccountId}                      ║`);
   console.log(`║     • Date: ${stmt.metadata.statementDate}                           ║`);
   console.log("║                                                              ║");
   console.log("╚══════════════════════════════════════════════════════════════╝\n");

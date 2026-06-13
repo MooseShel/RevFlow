@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
         phone,
         zipCode,
         totalDue,
-        facilityName: "GoRev Medical Facility",
+        customerAccountId: patientId,
         statementDate: new Date().toISOString().slice(0, 10),
         pdfFilename,
       };

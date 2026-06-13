@@ -36,7 +36,7 @@ export interface StatementRecord {
   phone: string;
   zipCode: string;
   totalDue: number;
-  facilityName: string;
+  customerAccountId: string;
   statementDate: string;
   pdfFilename: string;
   batchId?: string;
@@ -75,7 +75,7 @@ export async function processStatementRecord(
       record.totalDue,
       record.pdfFilename,
       JSON.stringify({
-        facilityName: record.facilityName,
+        customerAccountId: record.customerAccountId,
         statementDate: record.statementDate || new Date().toISOString().slice(0, 10),
       }),
     ];

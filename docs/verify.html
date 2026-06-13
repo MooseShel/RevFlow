@@ -508,13 +508,13 @@
       <!-- State 1: Verification Input form -->
       <div id="verificationGate">
         <h1>Secure <span>Patient Gate</span></h1>
-        <p class="subtitle">Enter the last 4 digits of your phone number to securely retrieve your billing details.</p>
+        <p class="subtitle">Enter your ZIP Code to securely retrieve your billing details.</p>
 
         <form id="verifyForm">
           <div class="form-group">
             <label for="verificationKey">Identity verification key</label>
             <div class="input-wrapper">
-              <input type="text" id="verificationKey" placeholder="Last 4 digits of phone number" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" autocomplete="off" required>
+              <input type="text" id="verificationKey" placeholder="5-digit ZIP Code" maxlength="5" autocomplete="off" required>
             </div>
           </div>
 
@@ -543,8 +543,8 @@
 
         <div class="statement-details">
           <div class="detail-row">
-            <span class="detail-label">Facility</span>
-            <span class="detail-value" id="statementFacility">N/A</span>
+            <span class="detail-label">Account ID</span>
+            <span class="detail-value" id="statementAccountId">N/A</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Statement Date</span>
@@ -602,7 +602,7 @@
       const btnText = document.getElementById("btnText");
       
       const statementAmount = document.getElementById("statementAmount");
-      const statementFacility = document.getElementById("statementFacility");
+      const statementAccountId = document.getElementById("statementAccountId");
       const statementDate = document.getElementById("statementDate");
       const statementId = document.getElementById("statementId");
       const downloadBtn = document.getElementById("downloadBtn");
@@ -652,7 +652,7 @@
 
             // Populate Statement details
             statementAmount.textContent = formattedAmount;
-            statementFacility.textContent = stmt.metadata?.facilityName || "Medical Provider";
+            statementAccountId.textContent = stmt.metadata?.customerAccountId || stmt.metadata?.accountNumber || "N/A";
             statementDate.textContent = stmt.metadata?.statementDate || "N/A";
             statementId.textContent = stmt.statement_id.substring(0, 18) + "...";
             downloadBtn.href = stmt.statement_pdf_url; // Secure temporary signed URL!
