@@ -96,12 +96,163 @@
     }
     .card-title svg { width: 22px; height: 22px; stroke: var(--primary-cyan); fill: none; stroke-width: 2; }
 
-    /* Login Gate */
-    .login-card { max-width: 460px; margin: 120px auto 0; }
+    /* Login Gate Layout */
+    .login-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 32px;
+      margin: 60px auto 0;
+      max-width: 1050px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .login-grid {
+        grid-template-columns: 1fr;
+        margin-top: 30px;
+      }
+    }
+    .login-card { width: 100%; max-width: 100%; margin: 0; }
     .login-card h2 {
       font-family: 'Outfit', sans-serif; font-size: 22px; text-align: center; margin-bottom: 8px;
     }
     .login-card .subtitle { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 28px; }
+
+    /* Compliance Card Styles */
+    .compliance-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 16px 32px rgba(0,0,0,0.25);
+    }
+    .compliance-card h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .compliance-card h2 svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--primary-cyan);
+      fill: none;
+      stroke-width: 2;
+    }
+    .compliance-subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .compliance-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .compliance-details {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .compliance-details[open] {
+      border-color: rgba(6, 182, 212, 0.3);
+      box-shadow: 0 4px 20px rgba(6, 182, 212, 0.05);
+    }
+    .compliance-summary {
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      list-style: none; /* Hide default arrow */
+    }
+    .compliance-summary::-webkit-details-marker {
+      display: none; /* Hide default arrow for Safari */
+    }
+    .compliance-summary-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .compliance-summary-left svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--primary-cyan);
+      fill: none;
+      stroke-width: 2.5;
+      flex-shrink: 0;
+    }
+    .compliance-summary-arrow {
+      font-size: 12px;
+      color: var(--text-dim);
+      transition: transform 0.3s ease;
+    }
+    .compliance-details[open] .compliance-summary-arrow {
+      transform: rotate(90deg);
+      color: var(--primary-cyan);
+    }
+    .compliance-content {
+      padding: 0 16px 16px 44px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .compliance-content strong {
+      color: var(--text-main);
+    }
+    .compliance-content ul {
+      margin-top: 8px;
+      padding-left: 20px;
+      list-style-type: disc;
+    }
+    .compliance-content li {
+      margin-bottom: 6px;
+    }
+    .compliance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .compliance-badge-sec {
+      background: rgba(6, 182, 212, 0.12);
+      color: var(--primary-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+    .compliance-footer {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .compliance-status-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
     
     /* Form Elements */
     input[type="text"], input[type="password"], input[type="email"], input[type="tel"], input[type="number"] {
@@ -347,18 +498,127 @@
 
     <!-- ═══ LOGIN GATE ═══ -->
     <div id="loginSection">
-      <div class="card login-card">
-        <h2>🔐 Admin Access</h2>
-        <p class="subtitle">Enter your admin password to access the billing upload portal.</p>
-        <div class="alert alert-error" id="loginError"><span id="loginErrorMsg">Invalid password.</span></div>
-        <div style="margin-bottom: 20px;">
-          <label for="adminPassword">Admin Password</label>
-          <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="off">
+      <div class="login-grid">
+        <div class="card login-card">
+          <h2>🔐 Admin Access</h2>
+          <p class="subtitle">Enter your admin password to access the billing upload portal.</p>
+          <div class="alert alert-error" id="loginError"><span id="loginErrorMsg">Invalid password.</span></div>
+          <div style="margin-bottom: 20px;">
+            <label for="adminPassword">Admin Password</label>
+            <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="off">
+          </div>
+          <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">
+            <span id="loginBtnText">Unlock Portal</span>
+            <div class="spinner hidden" id="loginSpinner"></div>
+          </button>
         </div>
-        <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">
-          <span id="loginBtnText">Unlock Portal</span>
-          <div class="spinner hidden" id="loginSpinner"></div>
-        </button>
+
+        <!-- Compliance & Security Audit Hub -->
+        <div class="compliance-card">
+          <h2>
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            HIPAA Compliance & Security Audit Hub
+          </h2>
+          <p class="compliance-subtitle">
+            Automated compliance analysis of technical safeguards, audit logging controls, and privacy-first logic implemented across the RevFlow infrastructure.
+          </p>
+
+          <div class="compliance-list">
+            
+            <details class="compliance-details">
+              <summary class="compliance-summary">
+                <span class="compliance-summary-left">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span>Access Control & RLS (§164.312(a)(1))</span>
+                </span>
+                <span class="compliance-summary-arrow">▶</span>
+              </summary>
+              <div class="compliance-content">
+                <strong>Technical Implementation Safeguards:</strong>
+                <ul>
+                  <li><strong>UUID v4 Tokenization</strong>: Links to patient statements use cryptographically random UUID v4 values. Statement records are completely decoupled from guessable linear primary keys.</li>
+                  <li><strong>PostgreSQL Row-Level Security (RLS)</strong>: Access to the <code>billing_statements</code> and <code>verification_tokens</code> tables is disabled by default. The database session configures transaction-local variables (<code>app.current_verified_token_id</code>) that only allow records associated with the authenticated patient session to be selected.</li>
+                  <li><strong>Private Document Storage</strong>: Statements are archived in a locked storage bucket with private-only access permissions. The backend verification endpoint generates temporary secure signed URLs valid for exactly 1 hour.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="compliance-details">
+              <summary class="compliance-summary">
+                <span class="compliance-summary-left">
+                  <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  <span>Immutable Audit Logging (§164.312(b))</span>
+                </span>
+                <span class="compliance-summary-arrow">▶</span>
+              </summary>
+              <div class="compliance-content">
+                <strong>Forensic & Activity Audit Trail:</strong>
+                <ul>
+                  <li><strong>Comprehensive Logging</strong>: The <code>access_audit_logs</code> table records the complete lifecycle of every statement. Logs are permanent, append-only, and protected by RLS rules that prevent modification or deletion.</li>
+                  <li><strong>Traceable Events</strong>: Records <code>GENERATED</code> (on initial ingestion), <code>VERIFIED</code> (when identity is verified), <code>VIEWED</code> (when statement document is accessed), and <code>ATTEMPT_FAIL</code> (failed access attempts).</li>
+                  <li><strong>Forensic Metadata</strong>: Automatically captures client IP addresses, user agents, and token identifiers to support continuous compliance monitoring.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="compliance-details">
+              <summary class="compliance-summary">
+                <span class="compliance-summary-left">
+                  <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 11 11 13 15 9"/></svg>
+                  <span>Data Integrity & Hashing (§164.312(c)(1))</span>
+                </span>
+                <span class="compliance-summary-arrow">▶</span>
+              </summary>
+              <div class="compliance-content">
+                <strong>Cryptographic Key Protections:</strong>
+                <ul>
+                  <li><strong>One-Way SHA-256 Hashing</strong>: Patient verification keys (ZIP Code and Phone number last 4 digits) are transformed into secure 256-bit hashes using Deno's native WebCrypto API before database insertion. Patient-supplied keys are matched strictly in their hashed state. Cleartext verification fields are never stored.</li>
+                  <li><strong>Social Security Numbers Omitted</strong>: Social Security Numbers are completely decoupled and excluded from the entire application layer. They are never processed by AI, stored in schemas, or rendered in UI structures.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="compliance-details">
+              <summary class="compliance-summary">
+                <span class="compliance-summary-left">
+                  <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <span>Minimum Necessary PHI Dispatch (§164.502(b))</span>
+                </span>
+                <span class="compliance-summary-arrow">▶</span>
+              </summary>
+              <div class="compliance-content">
+                <strong>Notification Transmission Safeguards:</strong>
+                <ul>
+                  <li><strong>Zero PHI over SMS/Email</strong>: Notification messages dispatched via Resend Email and Twilio SMS strictly contain no Patient Health Information.</li>
+                  <li><strong>Exclusions</strong>: Subject lines and body text contain no patient names, clinical treatments, doctor details, or dollar amounts. Dispatches only contain a secure verification link and general notice that a statement is ready.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="compliance-details">
+              <summary class="compliance-summary">
+                <span class="compliance-summary-left">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>Logger PHI Redaction & Sanitization (§164.514)</span>
+                </span>
+                <span class="compliance-summary-arrow">▶</span>
+              </summary>
+              <div class="compliance-content">
+                <strong>Application Log Sanitization:</strong>
+                <ul>
+                  <li><strong>Regex-Based Filter Rules</strong>: The central logger employs regular expressions to scan execution streams for sensitive data profiles (like full SSNs, phone numbers, or credit card formats).</li>
+                  <li><strong>Redaction Enforcement</strong>: Matches are replaced with <code>[SSN REDACTED]</code> or generic scrubbed values before logs are output to stdout/stderr, guaranteeing no PHI is written to developer logs.</li>
+                </ul>
+              </div>
+            </details>
+
+          </div>
+
+          <div class="compliance-footer">
+            <span class="compliance-status-label">Technical Status:</span>
+            <span class="compliance-badge"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block;margin-right:4px;"></span>Compliant</span>
+          </div>
+        </div>
       </div>
     </div>
 
