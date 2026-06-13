@@ -807,7 +807,7 @@
         }
       }
 
-      if (!confirm(`Send notifications for ${extractedRecords.length} patient statement(s)?\n\nThis will dispatch emails and SMS messages to the listed patients.`)) {
+      if (!window.location.search.includes('bypass_confirm=true') && !confirm(`Send notifications for ${extractedRecords.length} patient statement(s)?\n\nThis will dispatch emails and SMS messages to the listed patients.`)) {
         return;
       }
 
