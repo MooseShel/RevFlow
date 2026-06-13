@@ -382,9 +382,100 @@
       fill: none;
       margin-bottom: 20px;
     }
+
+      /* Theme Toggle Button */
+    .theme-toggle-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .theme-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+    .theme-toggle-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+    .theme-toggle-btn svg.hidden {
+      display: none !important;
+    }
+
+    /* Light Theme Variables & Overrides */
+    .light-theme {
+      --bg-dark: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(15, 23, 42, 0.08);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --primary-cyan: #0891b2;
+      --primary-purple: #7c3aed;
+      --primary-gradient: linear-gradient(135deg, #0891b2 0%, #7c3aed 100%);
+      --error-color: #e11d48;
+      --success-color: #059669;
+    }
+
+    /* Light theme specific visual adjustments */
+    .light-theme .blob { opacity: 0.08; }
+    .light-theme .theme-toggle-btn {
+      background: rgba(15, 23, 42, 0.05);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+    .light-theme .theme-toggle-btn:hover {
+      background: rgba(15, 23, 42, 0.1);
+    }
+
+    /* Input Overrides */
+    .light-theme input[type="text"] {
+      background: rgba(255, 255, 255, 0.9) !important;
+      border: 1px solid rgba(15, 23, 42, 0.12) !important;
+      color: #0f172a !important;
+    }
+    .light-theme input[type="text"]:focus {
+      background: #ffffff !important;
+      box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.15) !important;
+      border-color: var(--primary-cyan) !important;
+    }
+    .light-theme input[type="text"]::placeholder {
+      color: #94a3b8 !important;
+    }
+
+    /* Panel Card Elements */
+    .light-theme .amount-display {
+      background: rgba(15, 23, 42, 0.03);
+      border-color: rgba(15, 23, 42, 0.06);
+    }
+    .light-theme .statement-details {
+      background: rgba(15, 23, 42, 0.02);
+    }
   </style>
 </head>
 <body>
+  <script>
+    (function() {
+      const theme = localStorage.getItem("revflow_theme") || "dark";
+      if (theme === "light") {
+        document.body.classList.add("light-theme");
+      }
+    })();
+  </script>
+
+  <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Theme" style="position: absolute; top: 24px; right: 24px; z-index: 100;">
+    <svg class="sun-icon hidden" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg class="moon-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
 
   <!-- Decorative blobs -->
   <div class="bg-blobs">
@@ -590,7 +681,33 @@
           submitBtn.disabled = false;
         }
       });
+
+      // Initialize Theme Toggle Icon
+      const currentTheme = localStorage.getItem("revflow_theme") || "dark";
+      updateThemeIcon(currentTheme === "light");
     });
+
+    // Theme Management Logic
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle("light-theme");
+      localStorage.setItem("revflow_theme", isLight ? "light" : "dark");
+      updateThemeIcon(isLight);
+    }
+
+    // Update Sun/Moon SVG visibility on the theme toggle button
+    function updateThemeIcon(isLight) {
+      const btn = document.getElementById("themeToggleBtn");
+      if (!btn) return;
+      const sun = btn.querySelector(".sun-icon");
+      const moon = btn.querySelector(".moon-icon");
+      if (isLight) {
+        sun.classList.remove("hidden");
+        moon.classList.add("hidden");
+      } else {
+        sun.classList.add("hidden");
+        moon.classList.remove("hidden");
+      }
+    }
   </script>
 </body>
 </html>

@@ -465,6 +465,143 @@
     .footer { text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 40px; padding-bottom: 60px; }
     .footer a { color: var(--primary-cyan); text-decoration: none; }
 
+    /* Theme Toggle Button */
+    .theme-toggle-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .theme-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+    .theme-toggle-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+    .theme-toggle-btn svg.hidden {
+      display: none !important;
+    }
+
+    /* Light Theme Variables & Overrides */
+    .light-theme {
+      --bg-dark: #f8fafc;
+      --bg-surface: #e2e8f0;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(15, 23, 42, 0.08);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #64748b;
+      --primary-cyan: #0891b2;
+      --primary-purple: #7c3aed;
+      --primary-gradient: linear-gradient(135deg, #0891b2 0%, #7c3aed 100%);
+      --error-color: #e11d48;
+      --success-color: #059669;
+      --warning-color: #d97706;
+    }
+
+    /* Light theme specific visual adjustments */
+    .light-theme .blob { opacity: 0.08; }
+    .light-theme .theme-toggle-btn {
+      background: rgba(15, 23, 42, 0.05);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+    .light-theme .theme-toggle-btn:hover {
+      background: rgba(15, 23, 42, 0.1);
+    }
+
+    /* Input Overrides */
+    .light-theme input[type="text"],
+    .light-theme input[type="password"],
+    .light-theme input[type="email"],
+    .light-theme input[type="tel"],
+    .light-theme input[type="number"] {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      color: #0f172a;
+    }
+    .light-theme input:focus {
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.15);
+      border-color: var(--primary-cyan);
+    }
+    .light-theme input::placeholder {
+      color: #94a3b8;
+    }
+
+    /* Dashboard UI Elements */
+    .light-theme .file-item {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: rgba(15, 23, 42, 0.06);
+    }
+    .light-theme .file-status.status-pending {
+      background: rgba(15, 23, 42, 0.05);
+      color: var(--text-muted);
+    }
+    .light-theme .review-card-item {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(15, 23, 42, 0.06);
+    }
+    .light-theme .review-card-item:hover {
+      border-color: rgba(8, 145, 178, 0.2);
+    }
+    .light-theme .review-field input {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(15, 23, 42, 0.12);
+    }
+    .light-theme .review-field input.field-empty {
+      background: rgba(225, 29, 72, 0.03);
+      border-color: rgba(225, 29, 72, 0.2);
+    }
+    .light-theme .stat-card {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: rgba(15, 23, 42, 0.06);
+    }
+    .light-theme .result-item {
+      background: rgba(255, 255, 255, 0.8);
+    }
+    .light-theme .result-icon.ok {
+      background: rgba(5, 150, 105, 0.1);
+    }
+    .light-theme .result-icon.fail {
+      background: rgba(225, 29, 72, 0.1);
+    }
+    .light-theme .result-badge[style*="background:rgba(255,255,255,0.05)"] {
+      background: rgba(15, 23, 42, 0.05) !important;
+      color: var(--text-dim) !important;
+    }
+
+    /* Compliance details in light theme */
+    .light-theme .compliance-details {
+      background: rgba(255, 255, 255, 0.5);
+      border-color: rgba(15, 23, 42, 0.06);
+    }
+
+    /* Debug Console in light theme */
+    .light-theme .debug-toggle {
+      background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid rgba(8, 145, 178, 0.2);
+    }
+    .light-theme .debug-log {
+      background: rgba(248, 250, 252, 0.98);
+      border-top: 1px solid rgba(15, 23, 42, 0.05);
+    }
+    .light-theme .log-data {
+      color: #475569;
+    }
+
     /* Responsive */
     @media (max-width: 640px) {
       .app-container { padding: 16px; }
@@ -476,6 +613,14 @@
   </style>
 </head>
 <body>
+  <script>
+    (function() {
+      const theme = localStorage.getItem("revflow_theme") || "dark";
+      if (theme === "light") {
+        document.body.classList.add("light-theme");
+      }
+    })();
+  </script>
 
   <div class="bg-blobs">
     <div class="blob blob-1"></div>
@@ -493,7 +638,13 @@
         <h1>RevFlow <span>Admin Portal</span></h1>
         <p>Secure Billing Upload & Notification Center</p>
       </div>
-      <span class="header-badge badge-locked" id="authBadge">🔒 Locked</span>
+      <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+        <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+          <svg class="sun-icon hidden" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="moon-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <span class="header-badge badge-locked" style="margin-left: 0;" id="authBadge">🔒 Locked</span>
+      </div>
     </header>
 
     <!-- ═══ LOGIN GATE ═══ -->
@@ -1189,11 +1340,38 @@
     function escapeHtml(str) { return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
     function escapeAttr(str) { return String(str).replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 
-    // Enter key on password field
+    // Theme Management Logic
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle("light-theme");
+      localStorage.setItem("revflow_theme", isLight ? "light" : "dark");
+      updateThemeIcon(isLight);
+    }
+
+    function updateThemeIcon(isLight) {
+      const btn = document.getElementById("themeToggleBtn");
+      if (!btn) return;
+      const sun = btn.querySelector(".sun-icon");
+      const moon = btn.querySelector(".moon-icon");
+      if (isLight) {
+        sun.classList.remove("hidden");
+        moon.classList.add("hidden");
+      } else {
+        sun.classList.add("hidden");
+        moon.classList.remove("hidden");
+      }
+    }
+
+    // Enter key on password field & initialize theme icon
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("adminPassword").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") handleLogin();
-      });
+      const currentTheme = localStorage.getItem("revflow_theme") || "dark";
+      updateThemeIcon(currentTheme === "light");
+
+      const adminPass = document.getElementById("adminPassword");
+      if (adminPass) {
+        adminPass.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") handleLogin();
+        });
+      }
     });
   </script>
 </body>
